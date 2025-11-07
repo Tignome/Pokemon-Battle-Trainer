@@ -319,6 +319,15 @@
     .why-cell {
       color: rgba(15, 23, 42, 0.82);
       font-size: 0.9rem;
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    .why-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      line-height: 1.35;
     }
 
     .announcement {
@@ -545,18 +554,22 @@
       return hand;
     }
 
-    function outcome(attacker, defenderTypes) {
+    function matchupMultiplier(attacker, defender) {
       const rules = TYPE_EFFECTS[attacker];
+      if (rules.immune.includes(defender)) return 0;
+      if (rules.super.includes(defender)) return 2;
+      if (rules.not.includes(defender)) return 0.5;
+      return 1;
+    }
+
+    function outcome(attacker, defenderTypes) {
       let multiplier = 1;
       for (const def of defenderTypes) {
-        if (rules.immune.includes(def)) {
+        const single = matchupMultiplier(attacker, def);
+        if (single === 0) {
           return 0;
         }
-        if (rules.super.includes(def)) {
-          multiplier *= 2;
-        } else if (rules.not.includes(def)) {
-          multiplier *= 0.5;
-        }
+        multiplier *= single;
       }
       return Number(multiplier.toFixed(2));
     }
@@ -621,22 +634,36 @@
       return items;
     }
 
-    function buildReason(attacker, defenderTypes, mult) {
-      const effects = TYPE_EFFECTS[attacker];
-      const supers = defenderTypes.filter((d) => effects.super.includes(d));
-      const resists = defenderTypes.filter((d) => effects.not.includes(d));
-      const immunes = defenderTypes.filter((d) => effects.immune.includes(d));
-      if (mult === 0 && immunes.length) {
-        return `No effect on ${immunes.join(" and ")}.`;
+    function formatMultiplier(mult) {
+      switch (mult) {
+        case 4:
+          return "4×";
+        case 2:
+          return "2×";
+        case 1:
+          return "1×";
+        case 0.5:
+          return "½×";
+        case 0.25:
+          return "¼×";
+        default:
+          return "0×";
       }
-      if ((mult === 4 || mult === 2) && supers.length) {
-        return `Super-effective against ${supers.join(" and ")}.`;
-      }
-      if ((mult === 0.25 || mult === 0.5) && resists.length) {
-        const prefix = mult === 0.25 ? "Resisted" : "Not very effective";
-        return `${prefix} against ${resists.join(" and ")}.`;
-      }
-      return "Neutral damage.";
+    }
+
+    function effectivenessLabel(mult) {
+      if (mult === 0) return "No effect";
+      if (mult >= 2) return "Super-effective";
+      if (mult === 1) return "Neutral";
+      return "Not very effective";
+    }
+
+    function buildReasonDetails(attacker, defenderTypes) {
+      return defenderTypes.map((def) => {
+        const single = matchupMultiplier(attacker, def);
+        const label = effectivenessLabel(single);
+        return `${formatMultiplier(single)} vs ${def} · ${label}`;
+      });
     }
 
     function verdictLabel(mult) {
@@ -705,12 +732,14 @@
         }
         if (type === chosenType) tr.classList.add("chosen");
         if (type === state.best.winner) tr.classList.add("optimal");
-        const reason = buildReason(type, state.defender, mult);
+        const reason = buildReasonDetails(type, state.defender);
         tr.innerHTML = `
           <td><span class="type-badge type-${type}">${type}</span></td>
           <td>×${mult}</td>
           <td><span class="table-notes">${notes.join(" ")}</span></td>
-          <td class="why-cell">${reason}</td>
+          <td class="why-cell">${reason
+            .map((line) => `<span class="why-line">${line}</span>`)
+            .join("")}</td>
         `;
         tr.addEventListener("click", () => previewChoice(type));
         tr.addEventListener("keydown", (ev) => {
