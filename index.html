@@ -1,1 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Type Battle Training</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --surface: rgba(15, 23, 42, 0.85);
+      --surface-light: rgba(255, 255, 255, 0.92);
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --text-dark: #0f172a;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #1e3a8a, #020617);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-shell {
+      width: min(920px, 100vw);
+      padding: 1.5rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      letter-spacing: 0.03em;
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .defender-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .defender-types {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .type-badge {
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      min-width: 4.5rem;
+      text-align: center;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .hand {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .type-card {
+      background: var(--surface);
+      border-radius: 1rem;
+      padding: 1.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      min-height: 4.5rem;
+    }
+
+    .type-card:hover,
+    .type-card:focus-visible {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 14px 28px rgba(56, 189, 248, 0.25);
+      outline: none;
+    }
+
+    .type-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+    }
+
+    .type-card[disabled] {
+      cursor: not-allowed;
+      opacity: 0.7;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .scorebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .scorebar strong {
+      font-size: 1.05rem;
+    }
+
+    .next-btn {
+      align-self: center;
+      padding: 0.75rem 1.75rem;
+      font-size: 1rem;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: var(--text-dark);
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(56, 189, 248, 0.4);
+      transition: transform 0.15s ease;
+    }
+
+    .next-btn:hover,
+    .next-btn:focus-visible {
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .next-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 10;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface-light);
+      color: var(--text-dark);
+      border-radius: 1.25rem;
+      width: min(720px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.45);
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    .result-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .result-verdict {
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .result-verdict.good {
+      background: rgba(22, 163, 74, 0.2);
+      color: #166534;
+    }
+
+    .result-verdict.mid {
+      background: rgba(245, 158, 11, 0.2);
+      color: #92400e;
+    }
+
+    .result-verdict.bad {
+      background: rgba(239, 68, 68, 0.2);
+      color: #991b1b;
+    }
+
+    .explanations {
+      margin: 0;
+      padding-left: 1.2rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+      font-size: 0.95rem;
+    }
+
+    .comparison-table tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .comparison-table tr:hover,
+    .comparison-table tr:focus-visible {
+      background: rgba(56, 189, 248, 0.16);
+      outline: none;
+    }
+
+    .comparison-table tr.chosen {
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .comparison-table tr.optimal {
+      box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.65);
+    }
+
+    .why-cell {
+      color: rgba(15, 23, 42, 0.82);
+      font-size: 0.9rem;
+    }
+
+    .announcement {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    .badge-stack {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .modal .badge-stack .type-badge {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.75rem;
+    }
+
+    .table-notes {
+      font-size: 0.85rem;
+      color: rgba(15, 23, 42, 0.7);
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.8rem;
+      color: rgba(248, 250, 252, 0.6);
+      margin-top: auto;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 639px) {
+      .type-card {
+        font-size: 1rem;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 0.6rem 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .modal {
+        padding: 1.1rem;
+      }
+    }
+
+    /* Type colors */
+    .type-Normal { background: linear-gradient(135deg, #b8b8a8, #8c8c70); }
+    .type-Fire { background: linear-gradient(135deg, #f97316, #ef4444); }
+    .type-Water { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+    .type-Electric { background: linear-gradient(135deg, #fbbf24, #facc15); color: #78350f; }
+    .type-Grass { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .type-Ice { background: linear-gradient(135deg, #7dd3fc, #38bdf8); color: #0f172a; }
+    .type-Fighting { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .type-Poison { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+    .type-Ground { background: linear-gradient(135deg, #ca8a04, #b45309); }
+    .type-Flying { background: linear-gradient(135deg, #93c5fd, #60a5fa); color: #0f172a; }
+    .type-Psychic { background: linear-gradient(135deg, #fb7185, #f43f5e); }
+    .type-Bug { background: linear-gradient(135deg, #84cc16, #65a30d); }
+    .type-Rock { background: linear-gradient(135deg, #d1d5db, #9ca3af); color: #111827; }
+    .type-Ghost { background: linear-gradient(135deg, #6366f1, #4338ca); }
+    .type-Dragon { background: linear-gradient(135deg, #818cf8, #4338ca); }
+    .type-Dark { background: linear-gradient(135deg, #334155, #0f172a); }
+    .type-Steel { background: linear-gradient(135deg, #cbd5f5, #64748b); color: #0f172a; }
+    .type-Fairy { background: linear-gradient(135deg, #fbcfe8, #f472b6); color: #831843; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>Pokémon Type Battle Training</h1>
+      <p>Choose the most effective attack type against the defender to build your streak.</p>
+    </header>
+
+    <section class="card defender-card" aria-live="polite">
+      <h2>Defender</h2>
+      <div id="defender-types" class="defender-types"></div>
+    </section>
+
+    <section>
+      <h2 class="visually-hidden">Attack choices</h2>
+      <div id="hand" class="hand"></div>
+    </section>
+
+    <div class="scorebar" aria-live="polite">
+      <div><strong>Score:</strong> <span id="score">0/0</span></div>
+      <div><strong>Streak:</strong> <span id="streak">0</span></div>
+    </div>
+
+    <button id="next-btn" class="next-btn" type="button" hidden>Next</button>
+
+    <div id="announcement" class="announcement" aria-live="polite"></div>
+
+    <footer class="footer-note">Tip: Tap a row in the results table to compare each attack.</footer>
+  </div>
+
+  <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+    <div class="modal">
+      <div class="result-header">
+        <h2 id="result-title">Round Result</h2>
+        <div id="result-summary"></div>
+        <div id="result-verdict" class="result-verdict mid">&nbsp;</div>
+        <div id="result-defender" class="badge-stack"></div>
+      </div>
+      <div>
+        <h3>Type effectiveness</h3>
+        <ul id="explanations" class="explanations"></ul>
+      </div>
+      <div>
+        <h3>Hand comparison</h3>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th scope="col">Type</th>
+              <th scope="col">Multiplier</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody id="comparison-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function playCorrect() {}
+    function playWrong() {}
+
+    const TYPES = [
+      "Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting",
+      "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost",
+      "Dragon", "Dark", "Steel", "Fairy"
+    ];
+
+    const TYPE_EFFECTS = {
+      Normal: { super: [], not: ["Rock", "Steel"], immune: ["Ghost"] },
+      Fire: { super: ["Grass", "Ice", "Bug", "Steel"], not: ["Fire", "Water", "Rock", "Dragon"], immune: [] },
+      Water: { super: ["Fire", "Ground", "Rock"], not: ["Water", "Grass", "Dragon"], immune: [] },
+      Electric: { super: ["Water", "Flying"], not: ["Electric", "Grass", "Dragon"], immune: ["Ground"] },
+      Grass: { super: ["Water", "Ground", "Rock"], not: ["Fire", "Grass", "Poison", "Flying", "Bug", "Dragon", "Steel"], immune: [] },
+      Ice: { super: ["Grass", "Ground", "Flying", "Dragon"], not: ["Fire", "Water", "Ice", "Steel"], immune: [] },
+      Fighting: { super: ["Normal", "Ice", "Rock", "Dark", "Steel"], not: ["Poison", "Flying", "Psychic", "Bug", "Fairy"], immune: ["Ghost"] },
+      Poison: { super: ["Grass", "Fairy"], not: ["Poison", "Ground", "Rock", "Ghost"], immune: ["Steel"] },
+      Ground: { super: ["Fire", "Electric", "Poison", "Rock", "Steel"], not: ["Grass", "Bug"], immune: ["Flying"] },
+      Flying: { super: ["Grass", "Fighting", "Bug"], not: ["Electric", "Rock", "Steel"], immune: [] },
+      Psychic: { super: ["Fighting", "Poison"], not: ["Psychic", "Steel"], immune: ["Dark"] },
+      Bug: { super: ["Grass", "Psychic", "Dark"], not: ["Fire", "Fighting", "Poison", "Flying", "Ghost", "Steel", "Fairy"], immune: [] },
+      Rock: { super: ["Fire", "Ice", "Flying", "Bug"], not: ["Fighting", "Ground", "Steel"], immune: [] },
+      Ghost: { super: ["Psychic", "Ghost"], not: ["Dark"], immune: ["Normal"] },
+      Dragon: { super: ["Dragon"], not: ["Steel"], immune: ["Fairy"] },
+      Dark: { super: ["Psychic", "Ghost"], not: ["Fighting", "Dark", "Fairy"], immune: [] },
+      Steel: { super: ["Ice", "Rock", "Fairy"], not: ["Fire", "Water", "Electric", "Steel"], immune: [] },
+      Fairy: { super: ["Fighting", "Dragon", "Dark"], not: ["Fire", "Poison", "Steel"], immune: [] },
+    };
+
+    const defenderTypesEl = document.getElementById("defender-types");
+    const handEl = document.getElementById("hand");
+    const scoreEl = document.getElementById("score");
+    const streakEl = document.getElementById("streak");
+    const nextBtn = document.getElementById("next-btn");
+    const modalBackdrop = document.getElementById("modal-backdrop");
+    const resultSummaryEl = document.getElementById("result-summary");
+    const resultVerdictEl = document.getElementById("result-verdict");
+    const resultDefenderEl = document.getElementById("result-defender");
+    const explanationsEl = document.getElementById("explanations");
+    const comparisonBodyEl = document.getElementById("comparison-body");
+    const announcementEl = document.getElementById("announcement");
+
+    let state = {
+      defender: [],
+      hand: [],
+      best: null,
+      userChoice: null,
+      previewChoice: null,
+      rounds: 0,
+      correct: 0,
+      streak: 0,
+    };
+
+    function pickDefender() {
+      const pool = [...TYPES];
+      const count = Math.random() < 0.6 ? 1 : 2;
+      const selection = [];
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        selection.push(pool.splice(idx, 1)[0]);
+      }
+      return selection;
+    }
+
+    function dealHand() {
+      const pool = [...TYPES];
+      const hand = [];
+      for (let i = 0; i < 3; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        hand.push(pool.splice(idx, 1)[0]);
+      }
+      return hand;
+    }
+
+    function outcome(attacker, defenderTypes) {
+      const rules = TYPE_EFFECTS[attacker];
+      let multiplier = 1;
+      for (const def of defenderTypes) {
+        if (rules.immune.includes(def)) {
+          return 0;
+        }
+        if (rules.super.includes(def)) {
+          multiplier *= 2;
+        } else if (rules.not.includes(def)) {
+          multiplier *= 0.5;
+        }
+      }
+      return Number(multiplier.toFixed(2));
+    }
+
+    function bestChoice(hand, defender) {
+      const scores = hand.map((type) => ({ type, mult: outcome(type, defender) }));
+      let max = -Infinity;
+      for (const score of scores) {
+        if (score.mult > max) max = score.mult;
+      }
+      const winners = scores.filter((s) => s.mult === max);
+      return { winner: winners[0].type, max, scores };
+    }
+
+    function createBadge(type) {
+      const span = document.createElement("span");
+      span.className = `type-badge type-${type}`;
+      span.textContent = type;
+      return span;
+    }
+
+    function renderDefender(defTypes) {
+      defenderTypesEl.innerHTML = "";
+      defTypes.forEach((type) => {
+        defenderTypesEl.appendChild(createBadge(type));
+      });
+    }
+
+    function renderHand(hand) {
+      handEl.innerHTML = "";
+      hand.forEach((type) => {
+        const btn = document.createElement("button");
+        btn.className = `type-card type-${type}`;
+        btn.textContent = type;
+        btn.type = "button";
+        btn.dataset.type = type;
+        btn.addEventListener("click", () => onTypeSelected(type));
+        btn.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            onTypeSelected(type);
+          }
+        });
+        handEl.appendChild(btn);
+      });
+    }
+
+    function buildExplanations(attacker, defenderTypes) {
+      const effects = TYPE_EFFECTS[attacker];
+      const items = [];
+      defenderTypes.forEach((def) => {
+        if (effects.immune.includes(def)) {
+          items.push(`0× vs: ${def}`);
+        } else if (effects.super.includes(def)) {
+          items.push(`2× vs: ${def}`);
+        } else if (effects.not.includes(def)) {
+          items.push(`½× vs: ${def}`);
+        }
+      });
+      return items;
+    }
+
+    function buildReason(attacker, defenderTypes, mult) {
+      const effects = TYPE_EFFECTS[attacker];
+      const supers = defenderTypes.filter((d) => effects.super.includes(d));
+      const resists = defenderTypes.filter((d) => effects.not.includes(d));
+      const immunes = defenderTypes.filter((d) => effects.immune.includes(d));
+      if (mult === 0 && immunes.length) {
+        return `No effect on ${immunes.join(" and ")}.`;
+      }
+      if ((mult === 4 || mult === 2) && supers.length) {
+        return `Super-effective against ${supers.join(" and ")}.`;
+      }
+      if ((mult === 0.25 || mult === 0.5) && resists.length) {
+        const prefix = mult === 0.25 ? "Resisted" : "Not very effective";
+        return `${prefix} against ${resists.join(" and ")}.`;
+      }
+      return "Neutral damage.";
+    }
+
+    function verdictLabel(mult) {
+      if (mult === 0) return "No effect";
+      if (mult >= 2) return "Super-effective";
+      if (mult === 1) return "Neutral";
+      return "Not very effective";
+    }
+
+    function verdictClass(mult) {
+      if (mult >= 2) return "good";
+      if (mult === 1 || mult === 0.5) return "mid";
+      return "bad";
+    }
+
+    function announce(text) {
+      announcementEl.textContent = text;
+    }
+
+    function onTypeSelected(type) {
+      if (state.userChoice) return;
+      state.userChoice = type;
+      const mult = outcome(type, state.defender);
+      const wasBest = type === state.best.winner;
+      state.rounds += 1;
+      if (wasBest) {
+        state.correct += 1;
+        state.streak += 1;
+        playCorrect();
+      } else {
+        state.streak = 0;
+        playWrong();
+      }
+      scoreEl.textContent = `${state.correct}/${state.rounds}`;
+      streakEl.textContent = state.streak;
+      lockHand();
+      showResult(type, mult);
+      announce(`You chose ${type}. Multiplier times ${mult}. ${wasBest ? "Correct" : "Incorrect"}.`);
+    }
+
+    function lockHand() {
+      handEl.querySelectorAll("button").forEach((btn) => {
+        btn.disabled = true;
+        if (btn.dataset.type === state.userChoice) {
+          btn.classList.add("selected");
+        }
+      });
+    }
+
+    function renderComparison(handScores, chosenType) {
+      comparisonBodyEl.innerHTML = "";
+      const sorted = [...handScores].sort((a, b) => {
+        if (b.mult !== a.mult) return b.mult - a.mult;
+        return a.type.localeCompare(b.type);
+      });
+      sorted.forEach(({ type, mult }) => {
+        const tr = document.createElement("tr");
+        tr.tabIndex = 0;
+        tr.dataset.type = type;
+        const notes = [];
+        if (type === state.best.winner && type === chosenType) {
+          notes.push("Chosen · Optimal");
+        } else {
+          if (type === state.best.winner) notes.push("Optimal");
+          if (type === chosenType) notes.push("Chosen");
+        }
+        if (type === chosenType) tr.classList.add("chosen");
+        if (type === state.best.winner) tr.classList.add("optimal");
+        const reason = buildReason(type, state.defender, mult);
+        tr.innerHTML = `
+          <td><span class="type-badge type-${type}">${type}</span></td>
+          <td>×${mult}</td>
+          <td><span class="table-notes">${notes.join(" ")}</span></td>
+          <td class="why-cell">${reason}</td>
+        `;
+        tr.addEventListener("click", () => previewChoice(type));
+        tr.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            previewChoice(type);
+          }
+        });
+        comparisonBodyEl.appendChild(tr);
+      });
+    }
+
+    function updateResultHeader(type, mult) {
+      const label = verdictLabel(mult);
+      const summary = `You chose ${type} vs ${state.defender.join(" / ")} → ${label} (×${mult})`;
+      resultSummaryEl.textContent = summary;
+      resultVerdictEl.textContent = label;
+      resultVerdictEl.className = `result-verdict ${verdictClass(mult)}`;
+      resultDefenderEl.innerHTML = "";
+      state.defender.forEach((def) => {
+        resultDefenderEl.appendChild(createBadge(def));
+      });
+      const bullets = buildExplanations(type, state.defender);
+      explanationsEl.innerHTML = "";
+      bullets.forEach((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        explanationsEl.appendChild(li);
+      });
+      if (bullets.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No type modifiers: neutral matchup.";
+        explanationsEl.appendChild(li);
+      }
+    }
+
+    function previewChoice(type) {
+      state.previewChoice = type;
+      const mult = state.best.scores.find((s) => s.type === type)?.mult ?? outcome(type, state.defender);
+      updateResultHeader(type, mult);
+    }
+
+    function showResult(type, mult) {
+      modalBackdrop.hidden = false;
+      modalBackdrop.classList.add("active");
+      updateResultHeader(type, mult);
+      renderComparison(state.best.scores, type);
+      nextBtn.hidden = false;
+      nextBtn.disabled = false;
+    }
+
+    function setupNextRound() {
+      state.userChoice = null;
+      state.previewChoice = null;
+      modalBackdrop.hidden = true;
+      modalBackdrop.classList.remove("active");
+      nextBtn.hidden = true;
+      nextBtn.disabled = true;
+      newRound();
+    }
+
+    function newRound() {
+      state.defender = pickDefender();
+      let attempts = 0;
+      let hand;
+      let best;
+      do {
+        hand = dealHand();
+        best = bestChoice(hand, state.defender);
+        attempts += 1;
+      } while (attempts < 200 && best.scores.filter((s) => s.mult === best.max).length !== 1);
+      state.hand = hand;
+      state.best = best;
+      renderDefender(state.defender);
+      renderHand(hand);
+    }
+
+    nextBtn.addEventListener("click", setupNextRound);
+
+    newRound();
+  </script>
+</body>
+</html>
