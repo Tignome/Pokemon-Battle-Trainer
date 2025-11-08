@@ -623,6 +623,9 @@ function renderHand(hand) {
 
 function resolveSelection(index) {
   if (state.locked) return;
+  if (!Number.isInteger(index) || index < 0 || index >= state.matchups.length) {
+    return;
+  }
   state.locked = true;
   state.chosenIndex = index;
   state.previewIndex = index;
@@ -655,6 +658,9 @@ function lockHand(chosenIndex) {
 }
 
 function showResult() {
+  if (state.chosenIndex == null || !state.matchups[state.chosenIndex]) {
+    return;
+  }
   if (elements.nextBtn) {
     elements.nextBtn.hidden = false;
     elements.nextBtn.disabled = false;
