@@ -363,45 +363,90 @@ const state = {
 };
 
 const elements = {
-  defenderName: document.getElementById("defender-name"),
-  defenderTypes: document.getElementById("defender-types"),
-  defenderCard: document.getElementById("defender-card"),
-  hand: document.getElementById("hand"),
-  announcement: document.getElementById("announcement"),
-  score: document.getElementById("score"),
-  streak: document.getElementById("streak"),
-  nextBtn: document.getElementById("next-btn"),
-  modalBackdrop: document.getElementById("modal-backdrop"),
-  resultSummary: document.getElementById("result-summary"),
-  resultVerdict: document.getElementById("result-verdict"),
-  resultDefender: document.getElementById("result-defender"),
-  explanations: document.getElementById("explanations"),
-  comparisonBody: document.getElementById("comparison-body"),
-  closeModal: document.getElementById("close-modal"),
-  nextRound: document.getElementById("next-round"),
+  defenderName: null,
+  defenderTypes: null,
+  defenderCard: null,
+  hand: null,
+  announcement: null,
+  score: null,
+  streak: null,
+  nextBtn: null,
+  modalBackdrop: null,
+  resultSummary: null,
+  resultVerdict: null,
+  resultDefender: null,
+  explanations: null,
+  comparisonBody: null,
+  closeModal: null,
+  nextRound: null,
 };
 
-elements.nextBtn.addEventListener("click", startNextRound);
-elements.closeModal.addEventListener("click", () => closeModal(true));
-elements.nextRound.addEventListener("click", () => {
-  closeModal(false);
-  startNextRound();
-});
+function cacheElements() {
+  elements.defenderName = document.getElementById("defender-name");
+  elements.defenderTypes = document.getElementById("defender-types");
+  elements.defenderCard = document.getElementById("defender-card");
+  elements.hand = document.getElementById("hand");
+  elements.announcement = document.getElementById("announcement");
+  elements.score = document.getElementById("score");
+  elements.streak = document.getElementById("streak");
+  elements.nextBtn = document.getElementById("next-btn");
+  elements.modalBackdrop = document.getElementById("modal-backdrop");
+  elements.resultSummary = document.getElementById("result-summary");
+  elements.resultVerdict = document.getElementById("result-verdict");
+  elements.resultDefender = document.getElementById("result-defender");
+  elements.explanations = document.getElementById("explanations");
+  elements.comparisonBody = document.getElementById("comparison-body");
+  elements.closeModal = document.getElementById("close-modal");
+  elements.nextRound = document.getElementById("next-round");
+}
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !elements.modalBackdrop.hidden) {
-    closeModal(true);
+function bindEvents() {
+  if (elements.nextBtn) {
+    elements.nextBtn.addEventListener("click", startNextRound);
   }
-});
+  if (elements.closeModal) {
+    elements.closeModal.addEventListener("click", () => closeModal(true));
+  }
+  if (elements.nextRound) {
+    elements.nextRound.addEventListener("click", () => {
+      closeModal(false);
+      startNextRound();
+    });
+  }
 
-startNextRound();
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && elements.modalBackdrop && !elements.modalBackdrop.hidden) {
+      closeModal(true);
+    }
+  });
+}
+
+function init() {
+  cacheElements();
+  bindEvents();
+  startNextRound();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
 
 function startNextRound() {
-  elements.nextBtn.hidden = true;
-  elements.nextBtn.disabled = true;
-  elements.modalBackdrop.hidden = true;
-  elements.closeModal.disabled = true;
-  elements.nextRound.disabled = true;
+  if (elements.nextBtn) {
+    elements.nextBtn.hidden = true;
+    elements.nextBtn.disabled = true;
+  }
+  if (elements.modalBackdrop) {
+    elements.modalBackdrop.hidden = true;
+  }
+  if (elements.closeModal) {
+    elements.closeModal.disabled = true;
+  }
+  if (elements.nextRound) {
+    elements.nextRound.disabled = true;
+  }
   state.locked = false;
   state.chosenIndex = null;
   state.previewIndex = null;
@@ -533,13 +578,19 @@ function evaluateBest(matchups) {
 }
 
 function renderDefender(defender) {
-  elements.defenderName.textContent = defender.name;
-  renderTypeBadges(elements.defenderTypes, defender.types);
+  if (!elements.defenderCard) return;
+  if (elements.defenderName) {
+    elements.defenderName.textContent = defender.name;
+  }
+  if (elements.defenderTypes) {
+    renderTypeBadges(elements.defenderTypes, defender.types);
+  }
   elements.defenderCard.innerHTML = "";
   elements.defenderCard.appendChild(buildCard(defender, { variant: "defender" }));
 }
 
 function renderHand(hand) {
+  if (!elements.hand) return;
   elements.hand.innerHTML = "";
   state.handButtons = [];
   hand.forEach((pokemon, index) => {
@@ -604,18 +655,29 @@ function lockHand(chosenIndex) {
 }
 
 function showResult() {
-  elements.nextBtn.hidden = false;
-  elements.nextBtn.disabled = false;
-  elements.modalBackdrop.hidden = false;
-  elements.closeModal.disabled = false;
-  elements.nextRound.disabled = false;
+  if (elements.nextBtn) {
+    elements.nextBtn.hidden = false;
+    elements.nextBtn.disabled = false;
+  }
+  if (elements.modalBackdrop) {
+    elements.modalBackdrop.hidden = false;
+  }
+  if (elements.closeModal) {
+    elements.closeModal.disabled = false;
+  }
+  if (elements.nextRound) {
+    elements.nextRound.disabled = false;
+  }
   renderDefenderBadges();
   renderComparison();
   previewMatch(state.chosenIndex, false);
-  elements.closeModal.focus();
+  if (elements.closeModal) {
+    elements.closeModal.focus();
+  }
 }
 
 function renderDefenderBadges() {
+  if (!elements.resultDefender) return;
   renderTypeBadges(elements.resultDefender, state.defender.types);
 }
 
@@ -629,11 +691,15 @@ function previewMatch(index, announce = true) {
   const bestType = match.bestTypes[0] ?? match.results[0];
   const bestMultiplier = match.bestMultiplier;
   const typeLabel = bestType ? formatType(bestType.type) : "Unknown";
-  elements.resultSummary.textContent = `${prefix} ${match.pokemon.name} (${typeLabel}) vs ${defenderName} → ${verdictText(bestMultiplier)} (×${bestMultiplier})`;
-  elements.resultSummary.className = "result-summary";
+  if (elements.resultSummary) {
+    elements.resultSummary.textContent = `${prefix} ${match.pokemon.name} (${typeLabel}) vs ${defenderName} → ${verdictText(bestMultiplier)} (×${bestMultiplier})`;
+    elements.resultSummary.className = "result-summary";
+  }
   const verdictClass = verdictClassName(bestMultiplier);
-  elements.resultVerdict.textContent = verdictText(bestMultiplier);
-  elements.resultVerdict.className = `result-verdict ${verdictClass}`;
+  if (elements.resultVerdict) {
+    elements.resultVerdict.textContent = verdictText(bestMultiplier);
+    elements.resultVerdict.className = `result-verdict ${verdictClass}`;
+  }
   renderExplanationList(bestType);
   highlightPreviewRow(index);
   if (!isChosen && announce) {
@@ -642,6 +708,7 @@ function previewMatch(index, announce = true) {
 }
 
 function renderExplanationList(bestType) {
+  if (!elements.explanations) return;
   elements.explanations.innerHTML = "";
   if (!bestType) return;
   bestType.perType.forEach((entry) => {
@@ -653,6 +720,7 @@ function renderExplanationList(bestType) {
 }
 
 function renderComparison() {
+  if (!elements.comparisonBody) return;
   const sorted = state.matchups
     .map((match, index) => ({ match, index }))
     .sort((a, b) => {
@@ -804,6 +872,7 @@ function buildWhyLines(match) {
 }
 
 function renderTypeBadges(container, types) {
+  if (!container) return;
   container.innerHTML = "";
   types.forEach((type) => {
     container.appendChild(createTypeBadge(type));
@@ -838,19 +907,31 @@ function initialsFor(name) {
 }
 
 function updateScorebar() {
-  elements.score.textContent = `${state.score}/${state.rounds}`;
-  elements.streak.textContent = String(state.streak);
+  if (elements.score) {
+    elements.score.textContent = `${state.score}/${state.rounds}`;
+  }
+  if (elements.streak) {
+    elements.streak.textContent = String(state.streak);
+  }
 }
 
 function updateAnnouncement(message) {
-  elements.announcement.textContent = message;
+  if (elements.announcement) {
+    elements.announcement.textContent = message;
+  }
 }
 
 function closeModal(focusNext) {
-  elements.modalBackdrop.hidden = true;
-  elements.closeModal.disabled = true;
-  elements.nextRound.disabled = true;
-  if (focusNext) {
+  if (elements.modalBackdrop) {
+    elements.modalBackdrop.hidden = true;
+  }
+  if (elements.closeModal) {
+    elements.closeModal.disabled = true;
+  }
+  if (elements.nextRound) {
+    elements.nextRound.disabled = true;
+  }
+  if (focusNext && elements.nextBtn) {
     elements.nextBtn.focus();
   }
 }
