@@ -1,1 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Type Battle Training</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --surface: rgba(15, 23, 42, 0.85);
+      --surface-light: rgba(255, 255, 255, 0.92);
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --text-dark: #0f172a;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #1e3a8a, #020617);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-shell {
+      width: min(920px, 100vw);
+      padding: 1.5rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      letter-spacing: 0.03em;
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .defender-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .defender-types {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .type-badge {
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      min-width: 4.5rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .type-label {
+      letter-spacing: 0.05em;
+    }
+
+    .type-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .type-icon.fallback {
+      background-image: none !important;
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+
+    .hand {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .type-card {
+      background: var(--surface);
+      border-radius: 1rem;
+      padding: 1.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      min-height: 4.5rem;
+    }
+
+    .type-card .type-icon {
+      width: 2.15rem;
+      height: 2.15rem;
+      font-size: 1.1rem;
+      background-color: rgba(15, 23, 42, 0.35);
+    }
+
+    .type-card .type-label {
+      font-size: 1.05rem;
+      text-transform: uppercase;
+    }
+
+    .type-card:hover,
+    .type-card:focus-visible {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 14px 28px rgba(56, 189, 248, 0.25);
+      outline: none;
+    }
+
+    .type-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+    }
+
+    .type-card[disabled] {
+      cursor: not-allowed;
+      opacity: 0.7;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .scorebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .scorebar strong {
+      font-size: 1.05rem;
+    }
+
+    .next-btn {
+      align-self: center;
+      padding: 0.75rem 1.75rem;
+      font-size: 1rem;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: var(--text-dark);
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(56, 189, 248, 0.4);
+      transition: transform 0.15s ease;
+    }
+
+    .next-btn:hover,
+    .next-btn:focus-visible {
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .next-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 10;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface-light);
+      color: var(--text-dark);
+      border-radius: 1.25rem;
+      width: min(720px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.45);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-btn {
+      padding: 0.65rem 1.4rem;
+      border-radius: 999px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      font-size: 0.95rem;
+    }
+
+    .modal-btn.primary {
+      background: var(--accent);
+      color: var(--text-dark);
+      box-shadow: 0 10px 20px rgba(56, 189, 248, 0.35);
+    }
+
+    .modal-btn.secondary {
+      background: rgba(148, 163, 184, 0.2);
+      color: var(--text-dark);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .modal-btn:hover,
+    .modal-btn:focus-visible {
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .modal-btn:focus-visible {
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+    }
+
+    .modal-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    .result-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .result-verdict {
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .result-verdict.good {
+      background: rgba(22, 163, 74, 0.2);
+      color: #166534;
+    }
+
+    .result-verdict.mid {
+      background: rgba(245, 158, 11, 0.2);
+      color: #92400e;
+    }
+
+    .result-verdict.bad {
+      background: rgba(239, 68, 68, 0.2);
+      color: #991b1b;
+    }
+
+    .explanations {
+      margin: 0;
+      padding-left: 1.2rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+      font-size: 0.95rem;
+    }
+
+    .comparison-table tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .comparison-table tr:hover,
+    .comparison-table tr:focus-visible {
+      background: rgba(56, 189, 248, 0.16);
+      outline: none;
+    }
+
+    .comparison-table tr.chosen {
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .comparison-table tr.optimal {
+      box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.65);
+    }
+
+    .why-cell {
+      color: rgba(15, 23, 42, 0.82);
+      font-size: 0.9rem;
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    .why-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      line-height: 1.35;
+    }
+
+    .announcement {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    .badge-stack {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .modal .badge-stack .type-badge {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.75rem;
+    }
+
+    .table-notes {
+      font-size: 0.85rem;
+      color: rgba(15, 23, 42, 0.7);
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .table-notes:empty {
+      display: none;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.8rem;
+      color: rgba(248, 250, 252, 0.6);
+      margin-top: auto;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 639px) {
+      .type-card {
+        font-size: 1rem;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 0.6rem 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .modal {
+        padding: 1.1rem;
+      }
+    }
+
+    /* Type colors */
+    .type-Normal { background: linear-gradient(135deg, #b8b8a8, #8c8c70); }
+    .type-Fire { background: linear-gradient(135deg, #f97316, #ef4444); }
+    .type-Water { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+    .type-Electric { background: linear-gradient(135deg, #fbbf24, #facc15); color: #78350f; }
+    .type-Grass { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .type-Ice { background: linear-gradient(135deg, #7dd3fc, #38bdf8); color: #0f172a; }
+    .type-Fighting { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .type-Poison { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+    .type-Ground { background: linear-gradient(135deg, #ca8a04, #b45309); }
+    .type-Flying { background: linear-gradient(135deg, #93c5fd, #60a5fa); color: #0f172a; }
+    .type-Psychic { background: linear-gradient(135deg, #fb7185, #f43f5e); }
+    .type-Bug { background: linear-gradient(135deg, #84cc16, #65a30d); }
+    .type-Rock { background: linear-gradient(135deg, #d1d5db, #9ca3af); color: #111827; }
+    .type-Ghost { background: linear-gradient(135deg, #6366f1, #4338ca); }
+    .type-Dragon { background: linear-gradient(135deg, #818cf8, #4338ca); }
+    .type-Dark { background: linear-gradient(135deg, #334155, #0f172a); }
+    .type-Steel { background: linear-gradient(135deg, #cbd5f5, #64748b); color: #0f172a; }
+    .type-Fairy { background: linear-gradient(135deg, #fbcfe8, #f472b6); color: #831843; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>Pokémon Type Battle Training</h1>
+      <p>Choose the most effective attack type against the defender to build your streak.</p>
+    </header>
+
+    <section class="card defender-card" aria-live="polite">
+      <h2>Defender</h2>
+      <div id="defender-types" class="defender-types"></div>
+    </section>
+
+    <section>
+      <h2 class="visually-hidden">Attack choices</h2>
+      <div id="hand" class="hand"></div>
+    </section>
+
+    <div class="scorebar" aria-live="polite">
+      <div><strong>Score:</strong> <span id="score">0/0</span></div>
+      <div><strong>Streak:</strong> <span id="streak">0</span></div>
+    </div>
+
+    <button id="next-btn" class="next-btn" type="button" hidden>Next</button>
+
+    <div id="announcement" class="announcement" aria-live="polite"></div>
+
+    <footer class="footer-note">Tip: Tap a row in the results table to compare each attack.</footer>
+  </div>
+
+  <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+    <div class="modal">
+      <div class="result-header">
+        <h2 id="result-title">Round Result</h2>
+        <div id="result-summary"></div>
+        <div id="result-verdict" class="result-verdict mid">&nbsp;</div>
+        <div id="result-defender" class="badge-stack"></div>
+      </div>
+      <div>
+        <h3>Type effectiveness</h3>
+        <ul id="explanations" class="explanations"></ul>
+      </div>
+      <div>
+        <h3>Hand comparison</h3>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th scope="col">Type</th>
+              <th scope="col">Multiplier</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody id="comparison-body"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button id="close-modal" class="modal-btn secondary" type="button" disabled>Close</button>
+        <button id="next-round" class="modal-btn primary" type="button" disabled>Next round</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function playCorrect() {}
+    function playWrong() {}
+
+    const TYPES = [
+      "Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting",
+      "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost",
+      "Dragon", "Dark", "Steel", "Fairy"
+    ];
+
+    const TYPE_ICONS = {
+      "Normal": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dOb3JtYWwnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjQThBNzdBJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjQzZDNkE3Jy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ05vcm1hbCknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5ObzwvdGV4dD48L3N2Zz4=",
+      "Fire": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dGaXJlJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJScgc3RvcC1jb2xvcj0nI0VFODEzMCcvPjxzdG9wIG9mZnNldD0nMTAwJScgc3RvcC1jb2xvcj0nI0Y2QTg1QicvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9JzUwJyBjeT0nNTAnIHI9JzQ2JyBmaWxsPSd1cmwoI2dGaXJlKScgc3Ryb2tlPScjZmZmZmZmJyBzdHJva2Utd2lkdGg9JzQnLz48dGV4dCB4PSc1MCcgeT0nNjAnIGZvbnQtc2l6ZT0nMzQnIGZvbnQtZmFtaWx5PSInU2Vnb2UgVUknLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSc3MDAnIGZpbGw9JyNmZmZmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnPkZpPC90ZXh0Pjwvc3ZnPg==",
+      "Water": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dXYXRlcicgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyM2MzkwRjAnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyM4RkIzRkYnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnV2F0ZXIpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+V2E8L3RleHQ+PC9zdmc+",
+      "Electric": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dFbGVjdHJpYycgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyNGN0QwMkMnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyNGOUU2NzMnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnRWxlY3RyaWMpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+RWw8L3RleHQ+PC9zdmc+",
+      "Grass": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dHcmFzcycgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyM3QUM3NEMnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyNBNERENzMnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnR3Jhc3MpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+R3I8L3RleHQ+PC9zdmc+",
+      "Ice": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dJY2UnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjOTZEOUQ2Jy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjQzVGMkVGJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ0ljZSknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5JYzwvdGV4dD48L3N2Zz4=",
+      "Fighting": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dGaWdodGluZycgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyNDMjJFMjgnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyNEOTU4NTAnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnRmlnaHRpbmcpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+RnQ8L3RleHQ+PC9zdmc+",
+      "Poison": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dQb2lzb24nIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjQTMzRUExJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjQzU2QUMzJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ1BvaXNvbiknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5QczwvdGV4dD48L3N2Zz4=",
+      "Ground": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dHcm91bmQnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjRTJCRjY1Jy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjRjNEOThFJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ0dyb3VuZCknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5HZDwvdGV4dD48L3N2Zz4=",
+      "Flying": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dGbHlpbmcnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjQTk4RkYzJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjQzFCM0ZBJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ0ZseWluZyknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5GbDwvdGV4dD48L3N2Zz4=",
+      "Psychic": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dQc3ljaGljJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJScgc3RvcC1jb2xvcj0nI0Y5NTU4NycvPjxzdG9wIG9mZnNldD0nMTAwJScgc3RvcC1jb2xvcj0nI0ZGOEZCMScvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9JzUwJyBjeT0nNTAnIHI9JzQ2JyBmaWxsPSd1cmwoI2dQc3ljaGljKScgc3Ryb2tlPScjZmZmZmZmJyBzdHJva2Utd2lkdGg9JzQnLz48dGV4dCB4PSc1MCcgeT0nNjAnIGZvbnQtc2l6ZT0nMzQnIGZvbnQtZmFtaWx5PSInU2Vnb2UgVUknLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSc3MDAnIGZpbGw9JyNmZmZmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnPlB5PC90ZXh0Pjwvc3ZnPg==",
+      "Bug": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dCdWcnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjQTZCOTFBJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjQzdENjRCJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ0J1ZyknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5CZzwvdGV4dD48L3N2Zz4=",
+      "Rock": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dSb2NrJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJScgc3RvcC1jb2xvcj0nI0I2QTEzNicvPjxzdG9wIG9mZnNldD0nMTAwJScgc3RvcC1jb2xvcj0nI0Q2QzA2MCcvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9JzUwJyBjeT0nNTAnIHI9JzQ2JyBmaWxsPSd1cmwoI2dSb2NrKScgc3Ryb2tlPScjZmZmZmZmJyBzdHJva2Utd2lkdGg9JzQnLz48dGV4dCB4PSc1MCcgeT0nNjAnIGZvbnQtc2l6ZT0nMzQnIGZvbnQtZmFtaWx5PSInU2Vnb2UgVUknLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSc3MDAnIGZpbGw9JyNmZmZmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnPlJvPC90ZXh0Pjwvc3ZnPg==",
+      "Ghost": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dHaG9zdCcgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyM3MzU3OTcnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyM5Mjc3QjMnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnR2hvc3QpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+R2g8L3RleHQ+PC9zdmc+",
+      "Dragon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dEcmFnb24nIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjNkYzNUZDJy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjOTU2NkZGJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDYnIGZpbGw9J3VybCgjZ0RyYWdvbiknIHN0cm9rZT0nI2ZmZmZmZicgc3Ryb2tlLXdpZHRoPSc0Jy8+PHRleHQgeD0nNTAnIHk9JzYwJyBmb250LXNpemU9JzM0JyBmb250LWZhbWlseT0iJ1NlZ29lIFVJJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0nNzAwJyBmaWxsPScjZmZmZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJz5EcjwvdGV4dD48L3N2Zz4=",
+      "Dark": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dEYXJrJyB4MT0nMCcgeTE9JzAnIHgyPScxJyB5Mj0nMSc+PHN0b3Agb2Zmc2V0PScwJScgc3RvcC1jb2xvcj0nIzcwNTc0NicvPjxzdG9wIG9mZnNldD0nMTAwJScgc3RvcC1jb2xvcj0nIzhENkU1QycvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9JzUwJyBjeT0nNTAnIHI9JzQ2JyBmaWxsPSd1cmwoI2dEYXJrKScgc3Ryb2tlPScjZmZmZmZmJyBzdHJva2Utd2lkdGg9JzQnLz48dGV4dCB4PSc1MCcgeT0nNjAnIGZvbnQtc2l6ZT0nMzQnIGZvbnQtZmFtaWx5PSInU2Vnb2UgVUknLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSc3MDAnIGZpbGw9JyNmZmZmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnPkRrPC90ZXh0Pjwvc3ZnPg==",
+      "Steel": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dTdGVlbCcgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyNCN0I3Q0UnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyNENEQ0RTYnLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnU3RlZWwpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+U3Q8L3RleHQ+PC9zdmc+",
+      "Fairy": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2dGYWlyeScgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCUnIHN0b3AtY29sb3I9JyNENjg1QUQnLz48c3RvcCBvZmZzZXQ9JzEwMCUnIHN0b3AtY29sb3I9JyNGMUFGQ0InLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0NicgZmlsbD0ndXJsKCNnRmFpcnkpJyBzdHJva2U9JyNmZmZmZmYnIHN0cm9rZS13aWR0aD0nNCcvPjx0ZXh0IHg9JzUwJyB5PSc2MCcgZm9udC1zaXplPSczNCcgZm9udC1mYW1pbHk9IidTZWdvZSBVSScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9JzcwMCcgZmlsbD0nI2ZmZmZmZicgdGV4dC1hbmNob3I9J21pZGRsZSc+RmE8L3RleHQ+PC9zdmc+"
+    };
+
+    const defenderTypesEl = document.getElementById("defender-types");
+    const handEl = document.getElementById("hand");
+    const scoreEl = document.getElementById("score");
+    const streakEl = document.getElementById("streak");
+    const nextBtn = document.getElementById("next-btn");
+    const modalBackdrop = document.getElementById("modal-backdrop");
+    const closeModalBtn = document.getElementById("close-modal");
+    const nextRoundBtn = document.getElementById("next-round");
+    const resultSummaryEl = document.getElementById("result-summary");
+    const resultVerdictEl = document.getElementById("result-verdict");
+    const resultDefenderEl = document.getElementById("result-defender");
+    const explanationsEl = document.getElementById("explanations");
+    const comparisonBodyEl = document.getElementById("comparison-body");
+    const announcementEl = document.getElementById("announcement");
+
+    let state = {
+      defender: [],
+      hand: [],
+      best: null,
+      userChoice: null,
+      previewChoice: null,
+      rounds: 0,
+      correct: 0,
+      streak: 0,
+    };
+
+    function pickDefender() {
+      const pool = [...TYPES];
+      const count = Math.random() < 0.6 ? 1 : 2;
+      const selection = [];
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        selection.push(pool.splice(idx, 1)[0]);
+      }
+      return selection;
+    }
+
+    function dealHand() {
+      const pool = [...TYPES];
+      const hand = [];
+      for (let i = 0; i < 3; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        hand.push(pool.splice(idx, 1)[0]);
+      }
+      return hand;
+    }
+
+    function matchupMultiplier(attacker, defender) {
+      const rules = TYPE_EFFECTS[attacker];
+      if (rules.immune.includes(defender)) return 0;
+      if (rules.super.includes(defender)) return 2;
+      if (rules.not.includes(defender)) return 0.5;
+      return 1;
+    }
+
+    function outcome(attacker, defenderTypes) {
+      let multiplier = 1;
+      for (const def of defenderTypes) {
+        const single = matchupMultiplier(attacker, def);
+        if (single === 0) {
+          return 0;
+        }
+        multiplier *= single;
+      }
+      return Number(multiplier.toFixed(2));
+    }
+
+    function bestChoice(hand, defender) {
+      const scores = hand.map((type) => ({ type, mult: outcome(type, defender) }));
+      let max = -Infinity;
+      for (const score of scores) {
+        if (score.mult > max) max = score.mult;
+      }
+      const winners = scores.filter((s) => s.mult === max);
+      return { winner: winners[0].type, max, scores };
+    }
+
+    function populateTypeChip(target, type) {
+      target.textContent = "";
+      const icon = document.createElement("span");
+      icon.className = "type-icon";
+      const source = TYPE_ICONS[type];
+      if (source) {
+        icon.style.backgroundImage = `url(${source})`;
+      } else {
+        icon.classList.add("fallback");
+        icon.textContent = type[0];
+      }
+      icon.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.className = "type-label";
+      label.textContent = type;
+      target.append(icon, label);
+    }
+
+    function createBadge(type) {
+      const span = document.createElement("span");
+      span.className = `type-badge type-${type}`;
+      populateTypeChip(span, type);
+      return span;
+    }
+
+    function renderDefender(defTypes) {
+      defenderTypesEl.innerHTML = "";
+      defTypes.forEach((type) => {
+        defenderTypesEl.appendChild(createBadge(type));
+      });
+    }
+
+    function renderHand(hand) {
+      handEl.innerHTML = "";
+      hand.forEach((type) => {
+        const btn = document.createElement("button");
+        btn.className = `type-card type-${type}`;
+        populateTypeChip(btn, type);
+        btn.type = "button";
+        btn.dataset.type = type;
+        btn.addEventListener("click", () => onTypeSelected(type));
+        btn.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            onTypeSelected(type);
+          }
+        });
+        handEl.appendChild(btn);
+      });
+    }
+
+    function buildExplanations(attacker, defenderTypes) {
+      const effects = TYPE_EFFECTS[attacker];
+      const items = [];
+      defenderTypes.forEach((def) => {
+        if (effects.immune.includes(def)) {
+          items.push(`0× vs: ${def}`);
+        } else if (effects.super.includes(def)) {
+          items.push(`2× vs: ${def}`);
+        } else if (effects.not.includes(def)) {
+          items.push(`½× vs: ${def}`);
+        } else {
+          items.push(`1× vs: ${def}`);
+        }
+      });
+      return items;
+    }
+
+    function formatMultiplier(mult) {
+      switch (mult) {
+        case 4:
+          return "4×";
+        case 2:
+          return "2×";
+        case 1:
+          return "1×";
+        case 0.5:
+          return "½×";
+        case 0.25:
+          return "¼×";
+        default:
+          return "0×";
+      }
+    }
+
+    function effectivenessLabel(mult) {
+      if (mult === 0) return "No effect";
+      if (mult >= 2) return "Super-effective";
+      if (mult === 1) return "Neutral";
+      return "Not very effective";
+    }
+
+    function buildReasonDetails(attacker, defenderTypes) {
+      return defenderTypes.map((def) => {
+        const single = matchupMultiplier(attacker, def);
+        const label = effectivenessLabel(single);
+        return `${formatMultiplier(single)} vs ${def} · ${label}`;
+      });
+    }
+
+    function verdictLabel(mult) {
+      if (mult === 0) return "No effect";
+      if (mult >= 2) return "Super-effective";
+      if (mult === 1) return "Neutral";
+      return "Not very effective";
+    }
+
+    function verdictClass(mult) {
+      if (mult >= 2) return "good";
+      if (mult === 1 || mult === 0.5) return "mid";
+      return "bad";
+    }
+
+    function announce(text) {
+      announcementEl.textContent = text;
+    }
+
+    function onTypeSelected(type) {
+      if (state.userChoice) return;
+      state.userChoice = type;
+      const mult = outcome(type, state.defender);
+      const wasBest = type === state.best.winner;
+      state.rounds += 1;
+      if (wasBest) {
+        state.correct += 1;
+        state.streak += 1;
+        playCorrect();
+      } else {
+        state.streak = 0;
+        playWrong();
+      }
+      scoreEl.textContent = `${state.correct}/${state.rounds}`;
+      streakEl.textContent = state.streak;
+      lockHand();
+      showResult(type, mult);
+      announce(`You chose ${type}. Multiplier times ${mult}. ${wasBest ? "Correct" : "Incorrect"}.`);
+    }
+
+    function lockHand() {
+      handEl.querySelectorAll("button").forEach((btn) => {
+        btn.disabled = true;
+        if (btn.dataset.type === state.userChoice) {
+          btn.classList.add("selected");
+        }
+      });
+    }
+
+    function renderComparison(handScores, chosenType) {
+      comparisonBodyEl.innerHTML = "";
+      const sorted = [...handScores].sort((a, b) => {
+        if (b.mult !== a.mult) return b.mult - a.mult;
+        return a.type.localeCompare(b.type);
+      });
+      sorted.forEach(({ type, mult }) => {
+        const tr = document.createElement("tr");
+        tr.tabIndex = 0;
+        tr.dataset.type = type;
+        const notes = [];
+        if (type === state.best.winner && type === chosenType) {
+          notes.push("Chosen · Optimal");
+        } else {
+          if (type === state.best.winner) notes.push("Optimal");
+          if (type === chosenType) notes.push("Chosen");
+        }
+        if (type === chosenType) tr.classList.add("chosen");
+        if (type === state.best.winner) tr.classList.add("optimal");
+        const reason = buildReasonDetails(type, state.defender);
+        const typeCell = document.createElement("td");
+        typeCell.appendChild(createBadge(type));
+
+        const multCell = document.createElement("td");
+        multCell.textContent = `×${mult}`;
+
+        const notesCell = document.createElement("td");
+        const notesSpan = document.createElement("span");
+        notesSpan.className = "table-notes";
+        notesSpan.textContent = notes.join(" ");
+        notesCell.appendChild(notesSpan);
+
+        const whyCell = document.createElement("td");
+        whyCell.className = "why-cell";
+        reason.forEach((line) => {
+          const span = document.createElement("span");
+          span.className = "why-line";
+          span.textContent = line;
+          whyCell.appendChild(span);
+        });
+
+        tr.append(typeCell, multCell, notesCell, whyCell);
+        tr.addEventListener("click", () => previewChoice(type));
+        tr.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            previewChoice(type);
+          }
+        });
+        comparisonBodyEl.appendChild(tr);
+      });
+    }
+
+    function updateResultHeader(type, mult) {
+      const label = verdictLabel(mult);
+      const summary = `You chose ${type} vs ${state.defender.join(" / ")} → ${label} (×${mult})`;
+      resultSummaryEl.textContent = summary;
+      resultVerdictEl.textContent = label;
+      resultVerdictEl.className = `result-verdict ${verdictClass(mult)}`;
+      resultDefenderEl.innerHTML = "";
+      state.defender.forEach((def) => {
+        resultDefenderEl.appendChild(createBadge(def));
+      });
+      const bullets = buildExplanations(type, state.defender);
+      explanationsEl.innerHTML = "";
+      bullets.forEach((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        explanationsEl.appendChild(li);
+      });
+      if (bullets.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No type modifiers: neutral matchup.";
+        explanationsEl.appendChild(li);
+      }
+    }
+
+    function previewChoice(type) {
+      state.previewChoice = type;
+      const mult = state.best.scores.find((s) => s.type === type)?.mult ?? outcome(type, state.defender);
+      updateResultHeader(type, mult);
+    }
+
+    function showResult(type, mult) {
+      modalBackdrop.hidden = false;
+      modalBackdrop.classList.add("active");
+      updateResultHeader(type, mult);
+      renderComparison(state.best.scores, type);
+      nextBtn.hidden = false;
+      nextBtn.disabled = false;
+      closeModalBtn.disabled = false;
+      nextRoundBtn.disabled = false;
+    }
+
+    function setupNextRound() {
+      state.userChoice = null;
+      state.previewChoice = null;
+      modalBackdrop.hidden = true;
+      modalBackdrop.classList.remove("active");
+      nextBtn.hidden = true;
+      nextBtn.disabled = true;
+      closeModalBtn.disabled = true;
+      nextRoundBtn.disabled = true;
+      newRound();
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove("active");
+      modalBackdrop.hidden = true;
+      state.previewChoice = null;
+      closeModalBtn.disabled = true;
+      nextRoundBtn.disabled = true;
+      if (!nextBtn.hidden) {
+        nextBtn.focus();
+      }
+    }
+
+    function newRound() {
+      state.defender = pickDefender();
+      let attempts = 0;
+      let hand;
+      let best;
+      do {
+        hand = dealHand();
+        best = bestChoice(hand, state.defender);
+        attempts += 1;
+      } while (attempts < 200 && best.scores.filter((s) => s.mult === best.max).length !== 1);
+      state.hand = hand;
+      state.best = best;
+      renderDefender(state.defender);
+      renderHand(hand);
+    }
+
+    closeModalBtn.addEventListener("click", closeModal);
+    nextRoundBtn.addEventListener("click", setupNextRound);
+    modalBackdrop.addEventListener("click", (event) => {
+      if (event.target === modalBackdrop) {
+        closeModal();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modalBackdrop.hidden) {
+        closeModal();
+      }
+    });
+
+    nextBtn.addEventListener("click", setupNextRound);
+
+    newRound();
+  </script>
+</body>
+</html>
