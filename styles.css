@@ -181,35 +181,6 @@ main.tabletop::after {
   z-index: 1;
 }
 
-.top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.deck-pile {
-  position: relative;
-  width: clamp(140px, 18vw, 200px);
-  aspect-ratio: 63 / 88;
-}
-
-.deck-card {
-  position: absolute;
-  inset: 0;
-  border-radius: 18px;
-  border: 3px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(160deg, rgba(11, 48, 83, 0.9), rgba(23, 105, 170, 0.75));
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
-}
-
-.deck-card:nth-child(2) {
-  transform: translate(10px, -12px);
-}
-
-.deck-card:nth-child(3) {
-  transform: translate(20px, -24px);
-}
-
 .defender-zone,
 .hand-zone {
   background: rgba(255, 255, 255, 0.18);
@@ -386,6 +357,9 @@ main.tabletop::after {
   min-height: clamp(260px, 30vw, 320px);
   perspective: 1200px;
   padding: 1.2rem 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: min(90vw, 560px);
 }
 
 .hand-card {
@@ -396,8 +370,11 @@ main.tabletop::after {
   cursor: pointer;
   position: absolute;
   top: calc(var(--fan-index) * 16px);
-  left: calc(var(--fan-index) * 14%);
-  --final-transform: translateZ(0) rotate(calc((var(--fan-index) - 1) * 4deg));
+  left: 50%;
+  --fan-spread: clamp(80px, 18vw, 160px);
+  --fan-tilt: calc((var(--fan-index) - 1) * 4.5deg);
+  --fan-shift: calc((var(--fan-index) - 1) * var(--fan-spread));
+  --final-transform: translateX(-50%) translateX(var(--fan-shift)) rotate(var(--fan-tilt));
   transform: var(--final-transform);
   transform-origin: center 140%;
   transition: transform 0.22s ease, filter 0.22s ease;
@@ -431,7 +408,8 @@ main.tabletop::after {
 @keyframes deal-card {
   from {
     opacity: 0;
-    transform: translate(-80px, -120px) rotate(-12deg);
+    transform: translateX(-50%) translateX(var(--fan-shift)) translateY(-140px)
+      rotate(calc(var(--fan-tilt) - 8deg));
   }
   to {
     opacity: 1;
@@ -668,16 +646,8 @@ main.tabletop::after {
     border-radius: 28px;
   }
 
-  .deck-pile {
-    display: none;
-  }
-
   .hand {
     min-height: 280px;
-  }
-
-  .hand-card {
-    left: calc(var(--fan-index) * 18%);
   }
 }
 
@@ -699,11 +669,6 @@ main.tabletop::after {
   .scorebar {
     width: 100%;
     justify-content: space-between;
-  }
-
-  .hand-card {
-    left: calc(var(--fan-index) * 22%);
-    top: calc(var(--fan-index) * 12px);
   }
 
   .pokemon-card {
