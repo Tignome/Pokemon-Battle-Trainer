@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="tabletop">
-      <header class="game-header">
+    <div class="scale-wrapper">
+      <main class="tabletop">
+        <header class="game-header">
         <div class="title-block">
           <h1>Pokémon Type Battle Training</h1>
           <p>Deal your hand and choose the Pokémon whose type hits the defender hardest.</p>
@@ -40,7 +41,8 @@
 
       <div id="announcement" class="announcement" aria-live="polite"></div>
       <footer class="footer-note">Tip: Tap or click a comparison row to preview the matchup.</footer>
-    </main>
+      </main>
+    </div>
 
     <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
       <div class="modal">

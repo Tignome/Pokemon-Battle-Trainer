@@ -1,5 +1,6 @@
 :root {
   color-scheme: light;
+  --scale-factor: 0.5;
   --table-deep: #0b3053;
   --table-bright: #1769aa;
   --table-glow: rgba(255, 255, 255, 0.24);
@@ -36,12 +37,21 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: stretch;
+  align-items: flex-start;
   padding: clamp(1.5rem, 4vw, 3rem);
   background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.25), transparent 55%),
     radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.18), transparent 60%),
     linear-gradient(140deg, var(--table-deep), #0c4678, var(--table-bright));
   color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+.scale-wrapper {
+  width: min(1160px, calc(100vw / var(--scale-factor)));
+  display: flex;
+  justify-content: center;
+  transform: scale(var(--scale-factor));
+  transform-origin: top center;
 }
 
 main.tabletop {
