@@ -47,7 +47,8 @@ body {
 }
 
 .scale-wrapper {
-  width: min(1160px, calc(100vw / var(--scale-factor)));
+  width: min(1160px, 100%);
+  margin-inline: auto;
   display: flex;
   justify-content: center;
   transform: scale(var(--scale-factor));
@@ -465,6 +466,8 @@ main.tabletop::after {
   flex-direction: column;
   gap: 1.2rem;
   color: #381847;
+  transform: scale(var(--scale-factor));
+  transform-origin: top center;
 }
 
 .modal h2 {
