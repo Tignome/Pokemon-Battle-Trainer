@@ -360,6 +360,7 @@ main.tabletop::after {
   margin: 0 auto;
   width: 100%;
   max-width: min(90vw, 560px);
+  --fan-adjust: 0px;
 }
 
 .hand-card {
@@ -370,7 +371,7 @@ main.tabletop::after {
   cursor: pointer;
   position: absolute;
   top: calc(var(--fan-index) * 16px);
-  left: 50%;
+  left: calc(50% + var(--fan-adjust));
   --fan-spread: clamp(80px, 18vw, 160px);
   --fan-tilt: calc((var(--fan-index) - 1) * 4.5deg);
   --fan-shift: calc((var(--fan-index) - 1) * var(--fan-spread));

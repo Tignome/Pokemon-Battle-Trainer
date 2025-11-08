@@ -381,6 +381,8 @@ const elements = {
   nextRound: null,
 };
 
+let pendingResize = null;
+
 function cacheElements() {
   elements.defenderName = document.getElementById("defender-name");
   elements.defenderTypes = document.getElementById("defender-types");
@@ -418,6 +420,16 @@ function bindEvents() {
     if (event.key === "Escape" && elements.modalBackdrop && !elements.modalBackdrop.hidden) {
       closeModal(true);
     }
+  });
+
+  window.addEventListener("resize", () => {
+    if (pendingResize) {
+      cancelAnimationFrame(pendingResize);
+    }
+    pendingResize = requestAnimationFrame(() => {
+      pendingResize = null;
+      alignHandFan();
+    });
   });
 }
 
@@ -587,12 +599,14 @@ function renderDefender(defender) {
   }
   elements.defenderCard.innerHTML = "";
   elements.defenderCard.appendChild(buildCard(defender, { variant: "defender" }));
+  requestAnimationFrame(() => alignHandFan());
 }
 
 function renderHand(hand) {
   if (!elements.hand) return;
   elements.hand.innerHTML = "";
   state.handButtons = [];
+  elements.hand.style.setProperty("--fan-adjust", "0px");
   hand.forEach((pokemon, index) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -619,6 +633,26 @@ function renderHand(hand) {
     elements.hand.appendChild(button);
     state.handButtons.push(button);
   });
+  requestAnimationFrame(() => alignHandFan());
+}
+
+function alignHandFan() {
+  if (!elements.hand) return;
+  const cards = Array.from(elements.hand.querySelectorAll(".hand-card"));
+  if (cards.length === 0) {
+    elements.hand.style.setProperty("--fan-adjust", "0px");
+    return;
+  }
+  const defenderNode = elements.defenderCard?.firstElementChild || elements.defenderCard;
+  const handRect = elements.hand.getBoundingClientRect();
+  const anchorRect = defenderNode ? defenderNode.getBoundingClientRect() : handRect;
+  const anchorCenter = anchorRect.left + anchorRect.width / 2;
+  const cardRects = cards.map((card) => card.getBoundingClientRect());
+  const fanLeft = Math.min(...cardRects.map((rect) => rect.left));
+  const fanRight = Math.max(...cardRects.map((rect) => rect.right));
+  const fanCenter = (fanLeft + fanRight) / 2;
+  const delta = anchorCenter - fanCenter;
+  elements.hand.style.setProperty("--fan-adjust", `${delta}px`);
 }
 
 function resolveSelection(index) {
