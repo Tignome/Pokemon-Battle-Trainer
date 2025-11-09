@@ -52,6 +52,9 @@ const SPRITE_SOURCE_FALLBACK_HTML =
 const SPRITE_SOURCE_FALLBACK_CSV =
   "https://cdn.jsdelivr.net/gh/Tignome/pokedex-assets@main/pokedex_sprites_1_1025.csv";
 
+const LOCAL_SPRITE_DIRECTORY = "sugimori";
+const LOCAL_SPRITE_EXTENSION = ".png";
+
 const SPRITE_SOURCES = [
   SPRITE_SOURCE_PRIMARY_HTML,
   SPRITE_SOURCE_PRIMARY_CSV,
@@ -365,6 +368,7 @@ Sceptile (Shadow), 254, grass, none
 `;
 
 const ROSTER = parsePokemonData(POKEMON_DATA);
+applyLocalSprites(ROSTER);
 
 const state = {
   score: 0,
@@ -398,7 +402,7 @@ const elements = {
   streak: null,
   nextBtn: null,
   modalBackdrop: null,
-  resultSummary: null,
+  resultAdvice: null,
   resultVerdict: null,
   resultDefender: null,
   explanations: null,
@@ -424,7 +428,7 @@ function cacheElements() {
   elements.streak = document.getElementById("streak");
   elements.nextBtn = document.getElementById("next-btn");
   elements.modalBackdrop = document.getElementById("modal-backdrop");
-  elements.resultSummary = document.getElementById("result-summary");
+  elements.resultAdvice = document.getElementById("result-advice");
   elements.resultVerdict = document.getElementById("result-verdict");
   elements.resultDefender = document.getElementById("result-defender");
   elements.explanations = document.getElementById("explanations");
@@ -513,6 +517,9 @@ function startNextRound() {
   }
   if (elements.nextRound) {
     elements.nextRound.disabled = true;
+  }
+  if (elements.resultAdvice) {
+    elements.resultAdvice.textContent = "";
   }
   state.locked = false;
   state.chosenIndex = null;
@@ -883,6 +890,7 @@ function showResult() {
   }
   renderDefenderBadges();
   renderComparison();
+  updateResultAdvice();
   previewMatch(state.chosenIndex, false);
   if (elements.closeModal) {
     elements.closeModal.focus();
@@ -894,13 +902,132 @@ function renderDefenderBadges() {
   renderTypeBadges(elements.resultDefender, state.defender.types);
 }
 
+function updateResultAdvice() {
+  if (!elements.resultAdvice) return;
+  const { chosenIndex, bestIndex, matchups, chosenResult } = state;
+  const chosenMatch = Number.isInteger(chosenIndex) ? matchups[chosenIndex] : null;
+  const bestMatch = Number.isInteger(bestIndex) ? matchups[bestIndex] : null;
+
+  if (!chosenMatch) {
+    elements.resultAdvice.textContent = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
+    return;
+  }
+
+  const chosen = chosenResult || chosenMatch.bestTypes[0] || chosenMatch.results[0] || null;
+  const best = bestMatch ? bestMatch.bestTypes[0] || bestMatch.results[0] || null : null;
+  const chosenMultiplier = chosen ? chosen.multiplier : 0;
+  const bestMultiplier = best ? best.multiplier : chosenMultiplier;
+  let message = "";
+
+  if (bestMatch && chosenIndex === bestIndex && nearlyEqual(chosenMultiplier, bestMultiplier)) {
+    const reason = describeResultReason(best);
+    if (reason) {
+      message = `You made the best call. ${chosenMatch.pokemon.name} reached ×${bestMultiplier} because ${reason}.`;
+    } else {
+      message = `You made the best call. ${chosenMatch.pokemon.name} delivered the top multiplier of ×${bestMultiplier}.`;
+    }
+  } else if (bestMatch && best) {
+    const bestReason = describeResultReason(best);
+    const chosenReason = describeResultReason(chosen);
+    const firstSentence = `A stronger play was ${bestMatch.pokemon.name} for ×${bestMultiplier}${
+      bestReason ? ` because ${bestReason}` : ""
+    }.`;
+    let secondSentence = `Your pick ${chosenMatch.pokemon.name} only managed ×${chosenMultiplier}`;
+    if (chosenReason) {
+      secondSentence += ` because ${chosenReason}`;
+    }
+    secondSentence += ".";
+    message = `${firstSentence} ${secondSentence}`;
+  } else {
+    message = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
+  }
+
+  if (!message || !message.trim()) {
+    message = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
+  }
+
+  elements.resultAdvice.textContent = message;
+}
+
+function describeResultReason(result) {
+  if (!result || !Array.isArray(result.perType)) return "";
+
+  const supers = [];
+  const resisted = [];
+  const immune = [];
+  const neutral = [];
+
+  result.perType.forEach((entry) => {
+    if (!entry) return;
+    const label = formatType(entry.defender);
+    if (nearlyEqual(entry.multiplier, 2)) {
+      supers.push(label);
+    } else if (nearlyEqual(entry.multiplier, 1)) {
+      neutral.push(label);
+    } else if (nearlyEqual(entry.multiplier, 0)) {
+      immune.push(label);
+    } else if (nearlyEqual(entry.multiplier, 0.5) || nearlyEqual(entry.multiplier, 0.25)) {
+      resisted.push(label);
+    }
+  });
+
+  const multiplier = result.multiplier;
+
+  if (nearlyEqual(multiplier, 0)) {
+    if (immune.length) {
+      return `the defender's ${formatList(immune)} typing is immune to it`;
+    }
+    return "it couldn't damage the defender";
+  }
+
+  if (multiplier >= 4 - 0.0001) {
+    if (supers.length >= 2) {
+      return `it strikes both ${formatList(supers)} super effectively`;
+    }
+    if (supers.length) {
+      return `it lands doubly super-effective damage on ${formatList(supers)}`;
+    }
+    return "it overwhelms the defender";
+  }
+
+  if (nearlyEqual(multiplier, 2)) {
+    if (supers.length) {
+      return `it hits ${formatList(supers)} super effectively`;
+    }
+    return "it finds a weakness to exploit";
+  }
+
+  if (nearlyEqual(multiplier, 1)) {
+    if (supers.length && resisted.length) {
+      return `its hit on ${formatList(supers)} offsets the resistance from ${formatList(resisted)}`;
+    }
+    if (supers.length) {
+      return `it strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
+    }
+    if (neutral.length === result.perType.length) {
+      return "it deals reliable neutral damage";
+    }
+    if (resisted.length) {
+      return "it avoids the harsher resistances other cards faced";
+    }
+    return "it deals neutral damage";
+  }
+
+  if (nearlyEqual(multiplier, 0.5) || nearlyEqual(multiplier, 0.25)) {
+    if (resisted.length) {
+      return `it is partially resisted by ${formatList(resisted)}`;
+    }
+    return "it struggles to get through the defenses";
+  }
+
+  return "";
+}
+
 function previewMatch(index, announce = true) {
   const match = state.matchups[index];
   if (!match) return;
   state.previewIndex = index;
   const isChosen = index === state.chosenIndex;
-  const prefix = isChosen ? "You chose" : "Preview";
-  const defenderName = state.defender.name;
   let displayResult = null;
   if (isChosen && state.chosenResult) {
     displayResult = state.chosenResult;
@@ -911,11 +1038,6 @@ function previewMatch(index, announce = true) {
   state.previewResult = displayResult;
 
   const bestMultiplier = displayResult ? displayResult.multiplier : match.bestMultiplier;
-  const typeLabel = displayResult ? formatType(displayResult.type) : "Unknown";
-  if (elements.resultSummary) {
-    elements.resultSummary.textContent = `${prefix} ${match.pokemon.name} (${typeLabel}) vs ${defenderName} → ${verdictText(bestMultiplier)} (×${bestMultiplier})`;
-    elements.resultSummary.className = "result-summary";
-  }
   const verdictClass = verdictClassName(bestMultiplier);
   if (elements.resultVerdict) {
     elements.resultVerdict.textContent = verdictText(bestMultiplier);
@@ -1081,16 +1203,14 @@ function buildCard(pokemon, { variant }) {
   const art = document.createElement("div");
   art.className = "card-art";
   art.style.setProperty("--card-art-bg", cardGradient(pokemon.types));
-  const spriteUrl = pokemon.sprite || state.spriteMap.get(pokemon.dex) || null;
-  if (spriteUrl) {
-    art.classList.add("with-sprite");
+  const spriteCandidates = collectSpriteCandidates(pokemon);
+  if (spriteCandidates.length) {
     const img = document.createElement("img");
-    img.src = spriteUrl;
     img.alt = `${pokemon.name} sprite`;
     img.className = "card-sprite";
     img.loading = "lazy";
     img.decoding = "async";
-    art.appendChild(img);
+    loadSpriteFromCandidates(img, art, spriteCandidates, initialsFor(pokemon.name));
   } else {
     art.textContent = initialsFor(pokemon.name);
   }
@@ -1114,6 +1234,67 @@ function buildCard(pokemon, { variant }) {
   inner.appendChild(body);
   card.appendChild(inner);
   return card;
+}
+
+function collectSpriteCandidates(pokemon) {
+  const candidates = [];
+  const seen = new Set();
+  const add = (value) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    candidates.push(value);
+  };
+  (pokemon.localSprites || []).forEach(add);
+  add(pokemon.sprite);
+  const mapped = state.spriteMap.get(pokemon.dex);
+  add(mapped);
+  add(fallbackSpriteUrl(pokemon.dex));
+  return candidates;
+}
+
+function loadSpriteFromCandidates(img, container, candidates, fallbackText) {
+  const unique = [];
+  const seen = new Set();
+  candidates.forEach((candidate) => {
+    if (candidate && !seen.has(candidate)) {
+      seen.add(candidate);
+      unique.push(candidate);
+    }
+  });
+
+  if (!unique.length) {
+    container.textContent = fallbackText;
+    container.classList.remove("with-sprite");
+    return;
+  }
+
+  let index = 0;
+  const tryNext = () => {
+    if (index >= unique.length) {
+      container.classList.remove("with-sprite");
+      if (img.parentElement === container) {
+        container.removeChild(img);
+      }
+      container.textContent = fallbackText;
+      return;
+    }
+    const nextSrc = unique[index++];
+    container.textContent = "";
+    if (img.parentElement !== container) {
+      container.appendChild(img);
+    }
+    img.src = nextSrc;
+  };
+
+  img.addEventListener("error", () => {
+    img.removeAttribute("src");
+    tryNext();
+  });
+  img.addEventListener("load", () => {
+    container.classList.add("with-sprite");
+  });
+
+  tryNext();
 }
 
 function buildTablePokemonCell(pokemon) {
@@ -1252,6 +1433,15 @@ function normalizeMultiplier(value) {
   return best;
 }
 
+function formatList(items) {
+  if (!items || items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  const allButLast = items.slice(0, -1).join(", ");
+  const last = items[items.length - 1];
+  return `${allButLast}, and ${last}`;
+}
+
 function formatType(type) {
   if (!type) return "None";
   return type.charAt(0).toUpperCase() + type.slice(1);
@@ -1327,6 +1517,7 @@ function parsePokemonData(raw) {
         dex,
         types,
         sprite: null,
+        localSprites: [],
       };
     });
 }
@@ -1336,8 +1527,43 @@ function normalizeType(value) {
   return value.toLowerCase();
 }
 
+function applyLocalSprites(roster) {
+  roster.forEach((pokemon) => {
+    const candidates = buildLocalSpriteCandidates(pokemon.dex);
+    pokemon.localSprites = candidates;
+    if (!pokemon.sprite && candidates.length) {
+      [pokemon.sprite] = candidates;
+    }
+  });
+}
+
+function buildLocalSpriteCandidates(dex) {
+  if (!Number.isInteger(dex) || dex <= 0) {
+    return [];
+  }
+  const ids = new Set();
+  const raw = String(dex);
+  ids.add(raw);
+  ids.add(raw.padStart(3, "0"));
+  ids.add(raw.padStart(4, "0"));
+  ids.add(raw.padStart(5, "0"));
+  const candidates = [];
+  ids.forEach((id) => {
+    candidates.push(`${LOCAL_SPRITE_DIRECTORY}/${id}${LOCAL_SPRITE_EXTENSION}`);
+  });
+  return candidates;
+}
+
 async function primeSpriteAtlas() {
   if (typeof fetch !== "function") {
+    return;
+  }
+
+  const needsRemote = ROSTER.some(
+    (pokemon) => !pokemon.localSprites || pokemon.localSprites.length === 0
+  );
+  if (!needsRemote) {
+    state.spriteMap = new Map();
     return;
   }
 
