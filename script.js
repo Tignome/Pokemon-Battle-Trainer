@@ -1,6 +1,8 @@
 function playCorrect() {}
 function playWrong() {}
 
+const APP_VERSION = "0.65.0";
+
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
   fire: { super: ["grass", "ice", "bug", "steel"], not: ["fire", "water", "rock", "dragon"], immune: [] },
@@ -42,6 +44,62 @@ const TYPE_COLORS = {
   steel: "#B7B7CE",
   fairy: "#D685AD",
 };
+
+const TYPE_LIST = Object.keys(TYPE_CHART);
+
+const TYPE_ICON_OVERRIDES =
+  typeof window !== "undefined" && window.TYPE_ICON_OVERRIDES
+    ? window.TYPE_ICON_OVERRIDES
+    : null;
+
+function isRemoteAsset(url) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(url);
+}
+
+function appendCacheBust(url) {
+  if (!url || !APP_VERSION) return url;
+  let base = url;
+  let hash = "";
+  const hashIndex = url.indexOf("#");
+  if (hashIndex >= 0) {
+    base = url.slice(0, hashIndex);
+    hash = url.slice(hashIndex);
+  }
+  const questionIndex = base.indexOf("?");
+  if (questionIndex >= 0) {
+    const path = base.slice(0, questionIndex);
+    const query = base.slice(questionIndex + 1);
+    try {
+      const params = new URLSearchParams(query);
+      if (!params.has("v")) {
+        params.set("v", APP_VERSION);
+      }
+      base = `${path}?${params.toString()}`;
+    } catch (error) {
+      base = `${base}&v=${APP_VERSION}`;
+    }
+  } else {
+    base = `${base}?v=${APP_VERSION}`;
+  }
+  return `${base}${hash}`;
+}
+
+function withCacheBust(url) {
+  if (!url) return url;
+  if (isRemoteAsset(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+  return appendCacheBust(url);
+}
+
+function toAbsoluteUrl(url) {
+  if (!url) return url;
+  try {
+    return new URL(url, document.baseURI).href;
+  } catch (error) {
+    return url;
+  }
+}
 
 const SPRITE_SOURCE_PRIMARY_HTML =
   "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.html";
@@ -414,6 +472,7 @@ const elements = {
   typePickerPrompt: null,
   typePickerOptions: null,
   typePickerCancel: null,
+  versionTag: null,
 };
 
 let pendingResize = null;
@@ -440,6 +499,10 @@ function cacheElements() {
   elements.typePickerPrompt = document.getElementById("type-picker-prompt");
   elements.typePickerOptions = document.getElementById("type-picker-options");
   elements.typePickerCancel = document.getElementById("type-picker-cancel");
+  elements.versionTag = document.querySelector(".version-tag");
+  if (elements.versionTag) {
+    elements.versionTag.textContent = `Version ${APP_VERSION}`;
+  }
 }
 
 function bindEvents() {
@@ -795,7 +858,8 @@ function openTypePicker(index) {
   }
   if (elements.typePickerPrompt) {
     const formattedTypes = pokemon.types.map((type) => formatType(type)).join(" or ");
-    elements.typePickerPrompt.textContent = `${pokemon.name} can attack as ${formattedTypes}. Select one.`;
+    const prompt = `${pokemon.name} can attack as ${formattedTypes}. Select one.`;
+    renderTextWithTypeIcons(elements.typePickerPrompt, prompt);
   }
 
   elements.typePickerOptions.innerHTML = "";
@@ -808,7 +872,7 @@ function openTypePicker(index) {
     const badge = createTypeBadge(type);
     option.appendChild(badge);
     const label = document.createElement("span");
-    label.className = "type-picker-label";
+    label.className = "type-picker-label sr-only";
     label.textContent = formatType(type);
     option.appendChild(label);
     option.addEventListener("click", () => {
@@ -946,7 +1010,7 @@ function updateResultAdvice() {
     message = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
   }
 
-  elements.resultAdvice.textContent = message;
+  renderTextWithTypeIcons(elements.resultAdvice, message);
 }
 
 function describeResultReason(result) {
@@ -972,52 +1036,53 @@ function describeResultReason(result) {
   });
 
   const multiplier = result.multiplier;
+  const typeName = result.type ? formatType(result.type) : "This attack";
 
   if (nearlyEqual(multiplier, 0)) {
     if (immune.length) {
-      return `the defender's ${formatList(immune)} typing is immune to it`;
+      return `${typeName} can't affect ${formatList(immune)} because they're immune`;
     }
-    return "it couldn't damage the defender";
+    return `${typeName} couldn't damage the defender`;
   }
 
   if (multiplier >= 4 - 0.0001) {
     if (supers.length >= 2) {
-      return `it strikes both ${formatList(supers)} super effectively`;
+      return `${typeName} strikes both ${formatList(supers)} super effectively`;
     }
     if (supers.length) {
-      return `it lands doubly super-effective damage on ${formatList(supers)}`;
+      return `${typeName} lands doubly super-effective damage on ${formatList(supers)}`;
     }
-    return "it overwhelms the defender";
+    return `${typeName} overwhelms the defender`;
   }
 
   if (nearlyEqual(multiplier, 2)) {
     if (supers.length) {
-      return `it hits ${formatList(supers)} super effectively`;
+      return `${typeName} hits ${formatList(supers)} super effectively`;
     }
-    return "it finds a weakness to exploit";
+    return `${typeName} finds a weakness to exploit`;
   }
 
   if (nearlyEqual(multiplier, 1)) {
     if (supers.length && resisted.length) {
-      return `its hit on ${formatList(supers)} offsets the resistance from ${formatList(resisted)}`;
+      return `${typeName}'s hit on ${formatList(supers)} offsets the resistance from ${formatList(resisted)}`;
     }
     if (supers.length) {
-      return `it strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
+      return `${typeName} strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
     }
     if (neutral.length === result.perType.length) {
-      return "it deals reliable neutral damage";
+      return `${typeName} deals reliable neutral damage`;
     }
     if (resisted.length) {
-      return "it avoids the harsher resistances other cards faced";
+      return `${typeName} avoids the harsher resistances other cards faced`;
     }
-    return "it deals neutral damage";
+    return `${typeName} deals neutral damage`;
   }
 
   if (nearlyEqual(multiplier, 0.5) || nearlyEqual(multiplier, 0.25)) {
     if (resisted.length) {
-      return `it is partially resisted by ${formatList(resisted)}`;
+      return `${typeName} is partially resisted by ${formatList(resisted)}`;
     }
-    return "it struggles to get through the defenses";
+    return `${typeName} struggles to get through the defenses`;
   }
 
   return "";
@@ -1057,7 +1122,8 @@ function renderExplanationList(bestType) {
   bestType.perType.forEach((entry) => {
     const li = document.createElement("li");
     const descriptor = verdictText(entry.multiplier);
-    li.textContent = `×${entry.multiplier} vs ${formatType(entry.defender)} (${descriptor})`;
+    const text = `×${entry.multiplier} vs ${formatType(entry.defender)} (${descriptor})`;
+    renderTextWithTypeIcons(li, text);
     elements.explanations.appendChild(li);
   });
 }
@@ -1124,7 +1190,7 @@ function renderComparison() {
     notes.forEach((note) => {
       const pill = document.createElement("span");
       pill.className = "note-pill";
-      pill.textContent = note;
+      renderTextWithTypeIcons(pill, note);
       notesCell.appendChild(pill);
     });
 
@@ -1222,11 +1288,10 @@ function buildCard(pokemon, { variant }) {
   nameHeading.textContent = pokemon.name;
   body.appendChild(nameHeading);
   const typeLine = document.createElement("div");
-  typeLine.className = "card-types";
-  const typeText = document.createElement("span");
-  typeText.className = "card-type-text";
-  typeText.textContent = pokemon.types.map((type) => formatType(type)).join(" / ");
-  typeLine.appendChild(typeText);
+  typeLine.className = "card-types card-types-footer";
+  pokemon.types.forEach((type) => {
+    typeLine.appendChild(createTypeBadge(type, { variant: "inline" }));
+  });
   body.appendChild(typeLine);
 
   inner.appendChild(header);
@@ -1319,7 +1384,7 @@ function buildWhyLines(match, index) {
     line.dataset.type = result.type;
     const typeSpan = document.createElement("span");
     typeSpan.className = "why-type";
-    typeSpan.textContent = formatType(result.type);
+    renderTextWithTypeIcons(typeSpan, formatType(result.type));
     line.appendChild(typeSpan);
     const detail = document.createElement("span");
     detail.className = "why-detail";
@@ -1327,7 +1392,7 @@ function buildWhyLines(match, index) {
       const descriptor = verdictText(entry.multiplier);
       return `${formatType(entry.defender)} ×${entry.multiplier} (${descriptor})`;
     });
-    detail.textContent = segments.join(" • ");
+    renderTextWithTypeIcons(detail, segments.join(" • "));
     line.appendChild(detail);
     if (state.chosenIndex === index && state.chosenType === result.type) {
       line.classList.add("used");
@@ -1348,14 +1413,105 @@ function renderTypeBadges(container, types) {
   });
 }
 
-function createTypeBadge(type) {
+function typeIconCandidates(type) {
+  if (!type) return [];
+  const canonical = String(type).toLowerCase();
+  if (canonical === "none") return [];
+  const capitalized = canonical.charAt(0).toUpperCase() + canonical.slice(1);
+  const upper = canonical.toUpperCase();
+  const nameVariants = new Set([canonical, capitalized, upper]);
+  const prefixes = ["Types/", "./Types/", "types/", "./types/"];
+  const extensions = [".png", ".PNG", ".webp", ".WEBP"];
+  const seen = new Set();
+  const candidates = [];
+
+  const addCandidate = (candidate) => {
+    if (!candidate) return;
+    const normalized = withCacheBust(candidate);
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    candidates.push(normalized);
+  };
+
+  if (TYPE_ICON_OVERRIDES && TYPE_ICON_OVERRIDES[canonical]) {
+    const override = TYPE_ICON_OVERRIDES[canonical];
+    if (Array.isArray(override)) {
+      override.forEach((entry) => addCandidate(entry));
+    } else {
+      addCandidate(override);
+    }
+  }
+
+  prefixes.forEach((prefix) => {
+    nameVariants.forEach((name) => {
+      extensions.forEach((ext) => {
+        addCandidate(`${prefix}${name}${ext}`);
+      });
+    });
+  });
+
+  return candidates;
+}
+
+function createTypeBadge(type, options = {}) {
+  const { variant = "badge" } = options;
   const span = document.createElement("span");
-  span.className = "type-badge";
-  span.textContent = formatType(type);
-  const base = TYPE_COLORS[type] ?? "#9aa5b1";
-  const lighter = mixColor(base, "#ffffff", 0.25);
-  span.style.background = `linear-gradient(135deg, ${lighter}, ${base})`;
-  span.style.color = readableTextColor(base);
+  const classes = [variant === "inline" ? "type-icon-inline" : "type-badge", "type-no-icon"];
+  span.className = classes.join(" ");
+  span.dataset.type = type;
+
+  if (variant === "badge") {
+    const base = TYPE_COLORS[type] ?? "#9aa5b1";
+    const lighter = mixColor(base, "#ffffff", 0.25);
+    span.style.background = `linear-gradient(135deg, ${lighter}, ${base})`;
+    span.style.color = readableTextColor(base);
+  }
+
+  const candidates = typeIconCandidates(type);
+  const iconWrap = document.createElement("span");
+  iconWrap.className = "type-icon-wrap";
+  iconWrap.setAttribute("aria-hidden", "true");
+  const img = document.createElement("img");
+  img.className = "type-icon";
+  img.alt = "";
+  img.loading = "lazy";
+  img.decoding = "async";
+
+  const fallback = document.createElement("span");
+  fallback.className = "type-fallback";
+  fallback.textContent = formatType(type).charAt(0);
+
+  const srLabel = document.createElement("span");
+  srLabel.className = "sr-only";
+  srLabel.textContent = formatType(type);
+
+  if (candidates.length) {
+    let index = 0;
+    const tryNext = () => {
+      if (index >= candidates.length) {
+        iconWrap.remove();
+        span.classList.remove("type-has-icon");
+        span.classList.add("type-no-icon");
+        return;
+      }
+      const nextSrc = candidates[index++];
+      img.removeAttribute("src");
+      img.src = toAbsoluteUrl(nextSrc);
+    };
+    img.addEventListener("error", () => {
+      tryNext();
+    });
+    img.addEventListener("load", () => {
+      span.classList.add("type-has-icon");
+      span.classList.remove("type-no-icon");
+    });
+    iconWrap.appendChild(img);
+    span.appendChild(iconWrap);
+    tryNext();
+  }
+
+  span.appendChild(fallback);
+  span.appendChild(srLabel);
   return span;
 }
 
@@ -1445,6 +1601,44 @@ function formatList(items) {
 function formatType(type) {
   if (!type) return "None";
   return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+const TYPE_DISPLAY_TO_CANONICAL = TYPE_LIST.reduce((acc, type) => {
+  acc[formatType(type)] = type;
+  return acc;
+}, {});
+
+const TYPE_NAME_REGEX = new RegExp(
+  `\\b(${TYPE_LIST.map((type) => formatType(type)).join("|")})\\b`,
+  "g"
+);
+
+function renderTextWithTypeIcons(element, text) {
+  if (!element) return;
+  element.innerHTML = "";
+  if (!text) return;
+
+  TYPE_NAME_REGEX.lastIndex = 0;
+  let lastIndex = 0;
+  let match;
+  while ((match = TYPE_NAME_REGEX.exec(text)) !== null) {
+    const preceding = text.slice(lastIndex, match.index);
+    if (preceding) {
+      element.append(preceding);
+    }
+    const display = match[1];
+    const canonical = TYPE_DISPLAY_TO_CANONICAL[display] || display.toLowerCase();
+    if (canonical && canonical !== "none") {
+      element.appendChild(createTypeBadge(canonical, { variant: "inline" }));
+    } else {
+      element.append(display);
+    }
+    lastIndex = TYPE_NAME_REGEX.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    element.append(text.slice(lastIndex));
+  }
 }
 
 function readableTextColor(hex) {
