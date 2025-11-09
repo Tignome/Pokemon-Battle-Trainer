@@ -44,7 +44,7 @@ const TYPE_COLORS = {
 };
 
 const SPRITE_SOURCE =
-  "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.csv";
+  "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.html";
 
 const POKEMON_DATA = `
 Corsola (Galarian), 222, ghost, none
@@ -1344,38 +1344,108 @@ async function loadSpriteMap(url) {
     throw new Error(`Sprite atlas request failed with status ${response.status}`);
   }
   const text = await response.text();
-  return parseSpriteCsv(text);
+  return parseSpriteText(text, response.url || url);
 }
 
-function parseSpriteCsv(text) {
+function parseSpriteText(text, baseUrl) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) {
+    return new Map();
+  }
+  if (trimmed.startsWith("<")) {
+    const htmlMap = parseSpriteHtml(trimmed, baseUrl);
+    if (htmlMap.size > 0) {
+      return htmlMap;
+    }
+  }
+  return parseSpriteCsv(trimmed, baseUrl);
+}
+
+function parseSpriteHtml(html, baseUrl) {
   const map = new Map();
-  if (!text) {
+  if (typeof DOMParser !== "function") {
     return map;
   }
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const rows = Array.from(doc.querySelectorAll("table tr"));
+    if (!rows.length) {
+      return map;
+    }
+
+    let headerCells = null;
+    let dexIndex = 0;
+    let urlIndex = 1;
+    rows.forEach((row) => {
+      const cells = Array.from(row.querySelectorAll("th, td"));
+      if (!cells.length) {
+        return;
+      }
+      if (!headerCells) {
+        headerCells = cells.map((cell) => cell.textContent.trim().toLowerCase());
+        dexIndex = resolveIndex(headerCells, "pokedex", 0);
+        urlIndex = resolveIndex(headerCells, "sprite", Math.max(headerCells.length - 1, 1));
+        return;
+      }
+      const dexText = cells[dexIndex] ? cells[dexIndex].textContent.trim() : "";
+      const urlCell = cells[urlIndex];
+      const image = urlCell ? urlCell.querySelector("img") : null;
+      const rawUrl = image ? image.getAttribute("src") : urlCell?.textContent.trim();
+      const spriteUrl = normalizeSpriteUrl(rawUrl, baseUrl);
+      const dex = parseInt(dexText, 10);
+      if (!Number.isInteger(dex) || !spriteUrl) {
+        return;
+      }
+      map.set(dex, spriteUrl);
+    });
+  } catch (error) {
+    console.warn("Failed to parse sprite HTML", error);
+  }
+  return map;
+}
+
+function parseSpriteCsv(text, baseUrl) {
+  const map = new Map();
   const lines = text.trim().split(/\r?\n/);
-  if (lines.length === 0) {
+  if (!lines.length) {
     return map;
   }
   const header = lines.shift();
   const columns = header.split(",").map((col) => col.trim().toLowerCase());
-  const rawDexIndex = columns.findIndex((col) => col.includes("pokedex"));
-  const rawUrlIndex = columns.findIndex((col) => col.includes("sprite"));
-  const resolvedDexIndex = rawDexIndex >= 0 ? rawDexIndex : 0;
-  const resolvedUrlIndex = rawUrlIndex >= 0 ? rawUrlIndex : Math.max(columns.length - 1, 1);
+  const dexIndex = resolveIndex(columns, "pokedex", 0);
+  const urlIndex = resolveIndex(columns, "sprite", Math.max(columns.length - 1, 1));
   lines.forEach((line) => {
     if (!line) return;
     const parts = line.split(",");
-    if (parts.length === 0) return;
-    const dexValue = parts[resolvedDexIndex] ?? parts[0];
-    const urlValue = parts[resolvedUrlIndex] ?? parts[parts.length - 1];
+    const dexValue = parts[dexIndex] ?? parts[0];
+    const urlValue = parts[urlIndex] ?? parts[parts.length - 1];
     const dex = parseInt(dexValue, 10);
-    if (!Number.isInteger(dex) || !urlValue) {
-      return;
-    }
-    const spriteUrl = urlValue.trim();
-    if (spriteUrl) {
+    const spriteUrl = normalizeSpriteUrl(urlValue ? urlValue.trim() : "", baseUrl);
+    if (Number.isInteger(dex) && spriteUrl) {
       map.set(dex, spriteUrl);
     }
   });
   return map;
+}
+
+function resolveIndex(columns, keyword, fallback) {
+  const index = columns.findIndex((col) => col.includes(keyword));
+  return index >= 0 ? index : fallback;
+}
+
+function normalizeSpriteUrl(rawUrl, baseUrl) {
+  if (!rawUrl) {
+    return "";
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return "";
+  }
+  try {
+    const resolved = new URL(trimmed, baseUrl);
+    return resolved.href;
+  } catch (error) {
+    return trimmed;
+  }
 }
