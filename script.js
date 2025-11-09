@@ -1,6 +1,8 @@
 function playCorrect() {}
 function playWrong() {}
 
+const APP_VERSION = "0.61.0";
+
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
   fire: { super: ["grass", "ice", "bug", "steel"], not: ["fire", "water", "rock", "dragon"], immune: [] },
@@ -44,6 +46,60 @@ const TYPE_COLORS = {
 };
 
 const TYPE_LIST = Object.keys(TYPE_CHART);
+
+const TYPE_ICON_OVERRIDES =
+  typeof window !== "undefined" && window.TYPE_ICON_OVERRIDES
+    ? window.TYPE_ICON_OVERRIDES
+    : null;
+
+function isRemoteAsset(url) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(url);
+}
+
+function appendCacheBust(url) {
+  if (!url || !APP_VERSION) return url;
+  let base = url;
+  let hash = "";
+  const hashIndex = url.indexOf("#");
+  if (hashIndex >= 0) {
+    base = url.slice(0, hashIndex);
+    hash = url.slice(hashIndex);
+  }
+  const questionIndex = base.indexOf("?");
+  if (questionIndex >= 0) {
+    const path = base.slice(0, questionIndex);
+    const query = base.slice(questionIndex + 1);
+    try {
+      const params = new URLSearchParams(query);
+      if (!params.has("v")) {
+        params.set("v", APP_VERSION);
+      }
+      base = `${path}?${params.toString()}`;
+    } catch (error) {
+      base = `${base}&v=${APP_VERSION}`;
+    }
+  } else {
+    base = `${base}?v=${APP_VERSION}`;
+  }
+  return `${base}${hash}`;
+}
+
+function withCacheBust(url) {
+  if (!url) return url;
+  if (isRemoteAsset(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+  return appendCacheBust(url);
+}
+
+function toAbsoluteUrl(url) {
+  if (!url) return url;
+  try {
+    return new URL(url, document.baseURI).href;
+  } catch (error) {
+    return url;
+  }
+}
 
 const SPRITE_SOURCE_PRIMARY_HTML =
   "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.html";
@@ -416,6 +472,7 @@ const elements = {
   typePickerPrompt: null,
   typePickerOptions: null,
   typePickerCancel: null,
+  versionTag: null,
 };
 
 let pendingResize = null;
@@ -442,6 +499,10 @@ function cacheElements() {
   elements.typePickerPrompt = document.getElementById("type-picker-prompt");
   elements.typePickerOptions = document.getElementById("type-picker-options");
   elements.typePickerCancel = document.getElementById("type-picker-cancel");
+  elements.versionTag = document.querySelector(".version-tag");
+  if (elements.versionTag) {
+    elements.versionTag.textContent = `Version ${APP_VERSION}`;
+  }
 }
 
 function bindEvents() {
@@ -1358,16 +1419,36 @@ function typeIconCandidates(type) {
   const capitalized = canonical.charAt(0).toUpperCase() + canonical.slice(1);
   const upper = canonical.toUpperCase();
   const nameVariants = new Set([canonical, capitalized, upper]);
-  const prefixes = ["Types/", "./Types/"];
-  const extensions = [".png", ".PNG"];
+  const prefixes = ["Types/", "./Types/", "types/", "./types/"];
+  const extensions = [".png", ".PNG", ".webp", ".WEBP"];
+  const seen = new Set();
   const candidates = [];
+
+  const addCandidate = (candidate) => {
+    if (!candidate) return;
+    const normalized = withCacheBust(candidate);
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    candidates.push(normalized);
+  };
+
+  if (TYPE_ICON_OVERRIDES && TYPE_ICON_OVERRIDES[canonical]) {
+    const override = TYPE_ICON_OVERRIDES[canonical];
+    if (Array.isArray(override)) {
+      override.forEach((entry) => addCandidate(entry));
+    } else {
+      addCandidate(override);
+    }
+  }
+
   prefixes.forEach((prefix) => {
     nameVariants.forEach((name) => {
       extensions.forEach((ext) => {
-        candidates.push(`${prefix}${name}${ext}`);
+        addCandidate(`${prefix}${name}${ext}`);
       });
     });
   });
+
   return candidates;
 }
 
@@ -1414,7 +1495,7 @@ function createTypeBadge(type, options = {}) {
       }
       const nextSrc = candidates[index++];
       img.removeAttribute("src");
-      img.src = nextSrc;
+      img.src = toAbsoluteUrl(nextSrc);
     };
     img.addEventListener("error", () => {
       tryNext();
