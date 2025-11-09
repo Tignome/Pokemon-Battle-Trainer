@@ -80,6 +80,24 @@
       </div>
     </div>
 
+    <div
+      id="type-picker-backdrop"
+      class="type-picker-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="type-picker-title"
+      hidden
+    >
+      <div class="type-picker">
+        <h2 id="type-picker-title">Choose attack type</h2>
+        <p id="type-picker-prompt" class="type-picker-prompt"></p>
+        <div id="type-picker-options" class="type-picker-options"></div>
+        <div class="type-picker-actions">
+          <button id="type-picker-cancel" type="button" class="modal-btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <script src="script.js" defer></script>
   </body>
 </html>

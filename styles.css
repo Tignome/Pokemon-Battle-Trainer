@@ -468,7 +468,7 @@ main.tabletop::after {
   z-index: 1000;
 }
 
-.modal {
+.modal { 
   width: min(calc(760px * var(--scale-factor)), 100%);
   background: linear-gradient(165deg, #ffe3f1, #fff0c2);
   border-radius: calc(24 * var(--size-unit));
@@ -479,6 +479,83 @@ main.tabletop::after {
   flex-direction: column;
   gap: 1.2rem;
   color: #381847;
+}
+
+.type-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 18, 38, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  z-index: 1100;
+}
+
+.type-picker {
+  width: min(calc(520px * var(--scale-factor)), 92%);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(214, 235, 255, 0.9));
+  border-radius: calc(24 * var(--size-unit));
+  padding: clamp(1.25rem, calc(3vw * var(--scale-factor)), 1.75rem);
+  box-shadow: 0 calc(22 * var(--size-unit)) calc(44 * var(--size-unit)) rgba(5, 18, 38, 0.45);
+  border: calc(2 * var(--size-unit)) solid rgba(23, 105, 170, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.type-picker h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.type-picker-prompt {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-soft);
+}
+
+.type-picker-options {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.type-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: calc(18 * var(--size-unit));
+  border: calc(2 * var(--size-unit)) solid rgba(23, 105, 170, 0.28);
+  background: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.type-picker-option .type-badge {
+  font-size: 0.85rem;
+}
+
+.type-picker-option:focus-visible,
+.type-picker-option:hover {
+  transform: translateY(calc(-2 * var(--size-unit)));
+  border-color: rgba(23, 105, 170, 0.6);
+  box-shadow: 0 calc(12 * var(--size-unit)) calc(24 * var(--size-unit)) rgba(6, 22, 42, 0.25);
+  outline: none;
+}
+
+.type-picker-label {
+  color: var(--text-dark);
+}
+
+.type-picker-actions {
+  display: flex;
+  justify-content: center;
 }
 
 .modal h2 {
@@ -609,6 +686,12 @@ main.tabletop::after {
   margin-left: 0.35rem;
 }
 
+.multiplier-note {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-top: 0.1rem;
+}
+
 .why-lines {
   display: flex;
   flex-direction: column;
@@ -620,6 +703,15 @@ main.tabletop::after {
   display: flex;
   gap: 0.35rem;
   align-items: baseline;
+}
+
+.why-line.used {
+  font-weight: 700;
+  color: var(--mid);
+}
+
+.why-line.previewed {
+  text-decoration: underline;
 }
 
 .why-type {
