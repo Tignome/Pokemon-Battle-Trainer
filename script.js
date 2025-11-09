@@ -43,6 +43,9 @@ const TYPE_COLORS = {
   fairy: "#D685AD",
 };
 
+const SPRITE_SOURCE =
+  "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.csv";
+
 const POKEMON_DATA = `
 Corsola (Galarian), 222, ghost, none
 Cradily, 346, rock, grass
@@ -366,6 +369,7 @@ const state = {
   pendingIndex: null,
   handButtons: [],
   comparisonRows: [],
+  spriteMap: new Map(),
 };
 
 const elements = {
@@ -467,9 +471,10 @@ function bindEvents() {
   });
 }
 
-function init() {
+async function init() {
   cacheElements();
   bindEvents();
+  await primeSpriteAtlas();
   startNextRound();
 }
 
@@ -1060,7 +1065,19 @@ function buildCard(pokemon, { variant }) {
   const art = document.createElement("div");
   art.className = "card-art";
   art.style.setProperty("--card-art-bg", cardGradient(pokemon.types));
-  art.textContent = initialsFor(pokemon.name);
+  const spriteUrl = pokemon.sprite || state.spriteMap.get(pokemon.dex) || null;
+  if (spriteUrl) {
+    art.classList.add("with-sprite");
+    const img = document.createElement("img");
+    img.src = spriteUrl;
+    img.alt = `${pokemon.name} sprite`;
+    img.className = "card-sprite";
+    img.loading = "lazy";
+    img.decoding = "async";
+    art.appendChild(img);
+  } else {
+    art.textContent = initialsFor(pokemon.name);
+  }
 
   const body = document.createElement("div");
   body.className = "card-body";
@@ -1293,6 +1310,7 @@ function parsePokemonData(raw) {
         name,
         dex,
         types,
+        sprite: null,
       };
     });
 }
@@ -1300,4 +1318,64 @@ function parsePokemonData(raw) {
 function normalizeType(value) {
   if (!value) return null;
   return value.toLowerCase();
+}
+
+async function primeSpriteAtlas() {
+  if (typeof fetch !== "function") {
+    return;
+  }
+  try {
+    const map = await loadSpriteMap(SPRITE_SOURCE);
+    state.spriteMap = map;
+    ROSTER.forEach((pokemon) => {
+      const sprite = map.get(pokemon.dex);
+      if (sprite) {
+        pokemon.sprite = sprite;
+      }
+    });
+  } catch (error) {
+    console.warn("Failed to load sprite atlas", error);
+  }
+}
+
+async function loadSpriteMap(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Sprite atlas request failed with status ${response.status}`);
+  }
+  const text = await response.text();
+  return parseSpriteCsv(text);
+}
+
+function parseSpriteCsv(text) {
+  const map = new Map();
+  if (!text) {
+    return map;
+  }
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length === 0) {
+    return map;
+  }
+  const header = lines.shift();
+  const columns = header.split(",").map((col) => col.trim().toLowerCase());
+  const rawDexIndex = columns.findIndex((col) => col.includes("pokedex"));
+  const rawUrlIndex = columns.findIndex((col) => col.includes("sprite"));
+  const resolvedDexIndex = rawDexIndex >= 0 ? rawDexIndex : 0;
+  const resolvedUrlIndex = rawUrlIndex >= 0 ? rawUrlIndex : Math.max(columns.length - 1, 1);
+  lines.forEach((line) => {
+    if (!line) return;
+    const parts = line.split(",");
+    if (parts.length === 0) return;
+    const dexValue = parts[resolvedDexIndex] ?? parts[0];
+    const urlValue = parts[resolvedUrlIndex] ?? parts[parts.length - 1];
+    const dex = parseInt(dexValue, 10);
+    if (!Number.isInteger(dex) || !urlValue) {
+      return;
+    }
+    const spriteUrl = urlValue.trim();
+    if (spriteUrl) {
+      map.set(dex, spriteUrl);
+    }
+  });
+  return map;
 }

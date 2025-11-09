@@ -325,6 +325,10 @@ main.tabletop::after {
   );
 }
 
+.card-art.with-sprite {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(10, 26, 46, 0.5));
+}
+
 .card-art::after {
   content: "";
   position: absolute;
@@ -332,6 +336,15 @@ main.tabletop::after {
   border-radius: calc(14 * var(--size-unit));
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 55%);
   pointer-events: none;
+}
+
+.card-sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  transform: scale(1.08);
+  filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.35));
 }
 
 .card-body {
