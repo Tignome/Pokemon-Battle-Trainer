@@ -210,6 +210,10 @@ main.tabletop::after {
   backdrop-filter: blur(6px);
 }
 
+.hand-zone {
+  padding-bottom: clamp(3rem, calc(9vw * var(--scale-factor)), 4.75rem);
+}
+
 .defender-zone h2,
 .hand-zone h2 {
   margin: 0 0 0.8rem;
@@ -435,21 +439,29 @@ main.tabletop::after {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 0.35rem;
+  gap: clamp(0.35rem, calc(1vw * var(--scale-factor)), 0.6rem);
   min-height: clamp(
-    calc(92px * var(--scale-factor)),
-    calc(14vw * var(--scale-factor)),
-    calc(120px * var(--scale-factor))
+    calc(128px * var(--scale-factor)),
+    calc(20vw * var(--scale-factor)),
+    calc(192px * var(--scale-factor))
   );
   text-align: center;
+  padding: 0 0.4rem;
 }
 
 .card-name {
   margin: 0;
-  font-size: clamp(1.1rem, 2.4vw, 1.3rem);
+  font-size: clamp(
+    calc(20px * var(--scale-factor)),
+    calc(3.6vw * var(--scale-factor)),
+    calc(28px * var(--scale-factor))
+  );
   font-weight: 700;
   color: var(--text-dark);
-  line-height: 1.15;
+  line-height: 1.2;
+  letter-spacing: 0.015em;
+  text-shadow: 0 calc(2 * var(--size-unit)) calc(4 * var(--size-unit)) rgba(0, 0, 0, 0.18);
+  word-break: break-word;
 }
 
 .card-types {
@@ -573,6 +585,7 @@ main.tabletop::after {
   text-align: center;
   color: rgba(255, 255, 255, 0.78);
   font-size: 0.9rem;
+  margin-top: clamp(2.5rem, calc(8vw * var(--scale-factor)), 4rem);
 }
 
 .version-tag {
