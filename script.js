@@ -52,6 +52,9 @@ const SPRITE_SOURCE_FALLBACK_HTML =
 const SPRITE_SOURCE_FALLBACK_CSV =
   "https://cdn.jsdelivr.net/gh/Tignome/pokedex-assets@main/pokedex_sprites_1_1025.csv";
 
+const LOCAL_SPRITE_DIRECTORY = "sugimori";
+const LOCAL_SPRITE_EXTENSION = ".png";
+
 const SPRITE_SOURCES = [
   SPRITE_SOURCE_PRIMARY_HTML,
   SPRITE_SOURCE_PRIMARY_CSV,
@@ -365,6 +368,7 @@ Sceptile (Shadow), 254, grass, none
 `;
 
 const ROSTER = parsePokemonData(POKEMON_DATA);
+applyLocalSprites(ROSTER);
 
 const state = {
   score: 0,
@@ -1199,16 +1203,14 @@ function buildCard(pokemon, { variant }) {
   const art = document.createElement("div");
   art.className = "card-art";
   art.style.setProperty("--card-art-bg", cardGradient(pokemon.types));
-  const spriteUrl = pokemon.sprite || state.spriteMap.get(pokemon.dex) || null;
-  if (spriteUrl) {
-    art.classList.add("with-sprite");
+  const spriteCandidates = collectSpriteCandidates(pokemon);
+  if (spriteCandidates.length) {
     const img = document.createElement("img");
-    img.src = spriteUrl;
     img.alt = `${pokemon.name} sprite`;
     img.className = "card-sprite";
     img.loading = "lazy";
     img.decoding = "async";
-    art.appendChild(img);
+    loadSpriteFromCandidates(img, art, spriteCandidates, initialsFor(pokemon.name));
   } else {
     art.textContent = initialsFor(pokemon.name);
   }
@@ -1232,6 +1234,67 @@ function buildCard(pokemon, { variant }) {
   inner.appendChild(body);
   card.appendChild(inner);
   return card;
+}
+
+function collectSpriteCandidates(pokemon) {
+  const candidates = [];
+  const seen = new Set();
+  const add = (value) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    candidates.push(value);
+  };
+  (pokemon.localSprites || []).forEach(add);
+  add(pokemon.sprite);
+  const mapped = state.spriteMap.get(pokemon.dex);
+  add(mapped);
+  add(fallbackSpriteUrl(pokemon.dex));
+  return candidates;
+}
+
+function loadSpriteFromCandidates(img, container, candidates, fallbackText) {
+  const unique = [];
+  const seen = new Set();
+  candidates.forEach((candidate) => {
+    if (candidate && !seen.has(candidate)) {
+      seen.add(candidate);
+      unique.push(candidate);
+    }
+  });
+
+  if (!unique.length) {
+    container.textContent = fallbackText;
+    container.classList.remove("with-sprite");
+    return;
+  }
+
+  let index = 0;
+  const tryNext = () => {
+    if (index >= unique.length) {
+      container.classList.remove("with-sprite");
+      if (img.parentElement === container) {
+        container.removeChild(img);
+      }
+      container.textContent = fallbackText;
+      return;
+    }
+    const nextSrc = unique[index++];
+    container.textContent = "";
+    if (img.parentElement !== container) {
+      container.appendChild(img);
+    }
+    img.src = nextSrc;
+  };
+
+  img.addEventListener("error", () => {
+    img.removeAttribute("src");
+    tryNext();
+  });
+  img.addEventListener("load", () => {
+    container.classList.add("with-sprite");
+  });
+
+  tryNext();
 }
 
 function buildTablePokemonCell(pokemon) {
@@ -1454,6 +1517,7 @@ function parsePokemonData(raw) {
         dex,
         types,
         sprite: null,
+        localSprites: [],
       };
     });
 }
@@ -1463,8 +1527,43 @@ function normalizeType(value) {
   return value.toLowerCase();
 }
 
+function applyLocalSprites(roster) {
+  roster.forEach((pokemon) => {
+    const candidates = buildLocalSpriteCandidates(pokemon.dex);
+    pokemon.localSprites = candidates;
+    if (!pokemon.sprite && candidates.length) {
+      [pokemon.sprite] = candidates;
+    }
+  });
+}
+
+function buildLocalSpriteCandidates(dex) {
+  if (!Number.isInteger(dex) || dex <= 0) {
+    return [];
+  }
+  const ids = new Set();
+  const raw = String(dex);
+  ids.add(raw);
+  ids.add(raw.padStart(3, "0"));
+  ids.add(raw.padStart(4, "0"));
+  ids.add(raw.padStart(5, "0"));
+  const candidates = [];
+  ids.forEach((id) => {
+    candidates.push(`${LOCAL_SPRITE_DIRECTORY}/${id}${LOCAL_SPRITE_EXTENSION}`);
+  });
+  return candidates;
+}
+
 async function primeSpriteAtlas() {
   if (typeof fetch !== "function") {
+    return;
+  }
+
+  const needsRemote = ROSTER.some(
+    (pokemon) => !pokemon.localSprites || pokemon.localSprites.length === 0
+  );
+  if (!needsRemote) {
+    state.spriteMap = new Map();
     return;
   }
 
