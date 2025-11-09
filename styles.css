@@ -481,7 +481,7 @@ main.tabletop::after {
   z-index: 1000;
 }
 
-.modal { 
+.modal {
   width: min(calc(760px * var(--scale-factor)), 100%);
   background: linear-gradient(165deg, #ffe3f1, #fff0c2);
   border-radius: calc(24 * var(--size-unit));
@@ -491,7 +491,9 @@ main.tabletop::after {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
-  color: #381847;
+  color: #2f1a40;
+  font-size: 1.05rem;
+  line-height: 1.5;
 }
 
 .type-picker-backdrop {
@@ -573,21 +575,22 @@ main.tabletop::after {
 
 .modal h2 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 2.25rem;
+  letter-spacing: 0.02em;
 }
 
 .modal h3 {
   margin: 0 0 0.5rem;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .result-advice {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   font-weight: 600;
-  color: #54325f;
+  color: #3d2051;
 }
 
 .result-header {
@@ -597,7 +600,7 @@ main.tabletop::after {
 }
 
 .result-summary {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   color: var(--text-dark);
 }
 
@@ -611,6 +614,7 @@ main.tabletop::after {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   width: fit-content;
+  font-size: 1.1rem;
 }
 
 .result-verdict.good {
@@ -638,7 +642,7 @@ main.tabletop::after {
 }
 
 .explanations li {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 
 .comparison-table {
@@ -661,6 +665,10 @@ main.tabletop::after {
   text-align: left;
   border-bottom: 1px solid var(--table-line);
   vertical-align: top;
+  font-size: 1.05rem;
+}
+.comparison-table th {
+  font-size: 1.1rem;
 }
 
 .comparison-table tbody tr:last-child td {
@@ -696,7 +704,7 @@ main.tabletop::after {
   justify-content: center;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   background: rgba(11, 48, 83, 0.1);
   color: var(--text-dark);
@@ -707,7 +715,7 @@ main.tabletop::after {
 }
 
 .multiplier-note {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--text-soft);
   margin-top: 0.1rem;
 }
@@ -716,7 +724,7 @@ main.tabletop::after {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .why-line {
@@ -749,7 +757,7 @@ main.tabletop::after {
   border: none;
   border-radius: 999px;
   padding: 0.6rem 1.6rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, filter 0.2s ease;

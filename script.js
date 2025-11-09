@@ -907,7 +907,7 @@ function updateResultAdvice() {
   const bestMatch = Number.isInteger(bestIndex) ? matchups[bestIndex] : null;
 
   if (!chosenMatch) {
-    elements.resultAdvice.textContent = "";
+    elements.resultAdvice.textContent = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
     return;
   }
 
@@ -937,7 +937,11 @@ function updateResultAdvice() {
     secondSentence += ".";
     message = `${firstSentence} ${secondSentence}`;
   } else {
-    message = "Review the matchup breakdown below to plan your next move.";
+    message = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
+  }
+
+  if (!message || !message.trim()) {
+    message = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
   }
 
   elements.resultAdvice.textContent = message;
