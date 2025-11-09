@@ -1348,14 +1348,74 @@ function renderTypeBadges(container, types) {
   });
 }
 
+function typeIconCandidates(type) {
+  if (!type) return [];
+  const canonical = String(type).toLowerCase();
+  if (canonical === "none") return [];
+  const capitalized = canonical.charAt(0).toUpperCase() + canonical.slice(1);
+  const upper = canonical.toUpperCase();
+  const nameVariants = new Set([canonical, capitalized, upper]);
+  const prefixes = ["Types/", "./Types/"];
+  const extensions = [".png", ".PNG"];
+  const candidates = [];
+  prefixes.forEach((prefix) => {
+    nameVariants.forEach((name) => {
+      extensions.forEach((ext) => {
+        candidates.push(`${prefix}${name}${ext}`);
+      });
+    });
+  });
+  return candidates;
+}
+
 function createTypeBadge(type) {
   const span = document.createElement("span");
-  span.className = "type-badge";
-  span.textContent = formatType(type);
+  span.className = "type-badge type-no-icon";
+  span.dataset.type = type;
   const base = TYPE_COLORS[type] ?? "#9aa5b1";
   const lighter = mixColor(base, "#ffffff", 0.25);
   span.style.background = `linear-gradient(135deg, ${lighter}, ${base})`;
   span.style.color = readableTextColor(base);
+
+  const label = document.createElement("span");
+  label.className = "type-label";
+  label.textContent = formatType(type);
+
+  const candidates = typeIconCandidates(type);
+  if (candidates.length) {
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "type-icon-wrap";
+    iconWrap.setAttribute("aria-hidden", "true");
+    const img = document.createElement("img");
+    img.className = "type-icon";
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    let index = 0;
+    const tryNext = () => {
+      if (index >= candidates.length) {
+        iconWrap.remove();
+        span.classList.remove("type-has-icon");
+        span.classList.add("type-no-icon");
+        return;
+      }
+      const nextSrc = candidates[index++];
+      img.removeAttribute("src");
+      img.src = nextSrc;
+    };
+    img.addEventListener("error", () => {
+      tryNext();
+    });
+    img.addEventListener("load", () => {
+      span.classList.add("type-has-icon");
+      span.classList.remove("type-no-icon");
+    });
+    iconWrap.appendChild(img);
+    span.appendChild(iconWrap);
+    tryNext();
+  }
+
+  span.appendChild(label);
   return span;
 }
 

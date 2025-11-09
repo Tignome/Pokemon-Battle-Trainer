@@ -241,6 +241,9 @@ main.tabletop::after {
 }
 
 .type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--size-unit));
   padding: 0.22rem 0.65rem;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -251,6 +254,29 @@ main.tabletop::after {
   box-shadow: inset 0 calc(1 * var(--size-unit)) 0 var(--card-highlight);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.type-badge .type-label {
+  line-height: 1.1;
+}
+
+.type-badge .type-icon-wrap {
+  width: clamp(calc(22px * var(--scale-factor)), calc(2.6vw * var(--scale-factor)), calc(28px * var(--scale-factor)));
+  height: clamp(calc(22px * var(--scale-factor)), calc(2.6vw * var(--scale-factor)), calc(28px * var(--scale-factor)));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 calc(3 * var(--size-unit)) calc(6 * var(--size-unit)) rgba(0, 0, 0, 0.3));
+}
+
+.type-badge .type-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.type-badge.type-no-icon {
+  gap: 0;
 }
 
 .defender-slot {
