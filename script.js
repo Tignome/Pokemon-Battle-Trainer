@@ -398,7 +398,6 @@ const elements = {
   streak: null,
   nextBtn: null,
   modalBackdrop: null,
-  resultSummary: null,
   resultAdvice: null,
   resultVerdict: null,
   resultDefender: null,
@@ -425,7 +424,6 @@ function cacheElements() {
   elements.streak = document.getElementById("streak");
   elements.nextBtn = document.getElementById("next-btn");
   elements.modalBackdrop = document.getElementById("modal-backdrop");
-  elements.resultSummary = document.getElementById("result-summary");
   elements.resultAdvice = document.getElementById("result-advice");
   elements.resultVerdict = document.getElementById("result-verdict");
   elements.resultDefender = document.getElementById("result-defender");
@@ -1026,8 +1024,6 @@ function previewMatch(index, announce = true) {
   if (!match) return;
   state.previewIndex = index;
   const isChosen = index === state.chosenIndex;
-  const prefix = isChosen ? "You chose" : "Preview";
-  const defenderName = state.defender.name;
   let displayResult = null;
   if (isChosen && state.chosenResult) {
     displayResult = state.chosenResult;
@@ -1038,11 +1034,6 @@ function previewMatch(index, announce = true) {
   state.previewResult = displayResult;
 
   const bestMultiplier = displayResult ? displayResult.multiplier : match.bestMultiplier;
-  const typeLabel = displayResult ? formatType(displayResult.type) : "Unknown";
-  if (elements.resultSummary) {
-    elements.resultSummary.textContent = `${prefix} ${match.pokemon.name} (${typeLabel}) vs ${defenderName} → ${verdictText(bestMultiplier)} (×${bestMultiplier})`;
-    elements.resultSummary.className = "result-summary";
-  }
   const verdictClass = verdictClassName(bestMultiplier);
   if (elements.resultVerdict) {
     elements.resultVerdict.textContent = verdictText(bestMultiplier);

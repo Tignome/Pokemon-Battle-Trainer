@@ -599,11 +599,6 @@ main.tabletop::after {
   gap: 0.6rem;
 }
 
-.result-summary {
-  font-size: 1.25rem;
-  color: var(--text-dark);
-}
-
 .result-verdict {
   display: inline-flex;
   align-items: center;
