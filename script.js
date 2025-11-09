@@ -1,7 +1,7 @@
 function playCorrect() {}
 function playWrong() {}
 
-const APP_VERSION = "0.63.0";
+const APP_VERSION = "0.64.0";
 
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
@@ -1036,52 +1036,53 @@ function describeResultReason(result) {
   });
 
   const multiplier = result.multiplier;
+  const typeName = result.type ? formatType(result.type) : "This attack";
 
   if (nearlyEqual(multiplier, 0)) {
     if (immune.length) {
-      return `the defender's ${formatList(immune)} typing is immune to it`;
+      return `${typeName} can't affect ${formatList(immune)} because they're immune`;
     }
-    return "it couldn't damage the defender";
+    return `${typeName} couldn't damage the defender`;
   }
 
   if (multiplier >= 4 - 0.0001) {
     if (supers.length >= 2) {
-      return `it strikes both ${formatList(supers)} super effectively`;
+      return `${typeName} strikes both ${formatList(supers)} super effectively`;
     }
     if (supers.length) {
-      return `it lands doubly super-effective damage on ${formatList(supers)}`;
+      return `${typeName} lands doubly super-effective damage on ${formatList(supers)}`;
     }
-    return "it overwhelms the defender";
+    return `${typeName} overwhelms the defender`;
   }
 
   if (nearlyEqual(multiplier, 2)) {
     if (supers.length) {
-      return `it hits ${formatList(supers)} super effectively`;
+      return `${typeName} hits ${formatList(supers)} super effectively`;
     }
-    return "it finds a weakness to exploit";
+    return `${typeName} finds a weakness to exploit`;
   }
 
   if (nearlyEqual(multiplier, 1)) {
     if (supers.length && resisted.length) {
-      return `its hit on ${formatList(supers)} offsets the resistance from ${formatList(resisted)}`;
+      return `${typeName}'s hit on ${formatList(supers)} offsets the resistance from ${formatList(resisted)}`;
     }
     if (supers.length) {
-      return `it strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
+      return `${typeName} strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
     }
     if (neutral.length === result.perType.length) {
-      return "it deals reliable neutral damage";
+      return `${typeName} deals reliable neutral damage`;
     }
     if (resisted.length) {
-      return "it avoids the harsher resistances other cards faced";
+      return `${typeName} avoids the harsher resistances other cards faced`;
     }
-    return "it deals neutral damage";
+    return `${typeName} deals neutral damage`;
   }
 
   if (nearlyEqual(multiplier, 0.5) || nearlyEqual(multiplier, 0.25)) {
     if (resisted.length) {
-      return `it is partially resisted by ${formatList(resisted)}`;
+      return `${typeName} is partially resisted by ${formatList(resisted)}`;
     }
-    return "it struggles to get through the defenses";
+    return `${typeName} struggles to get through the defenses`;
   }
 
   return "";
