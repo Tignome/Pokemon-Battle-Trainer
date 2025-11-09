@@ -1,6 +1,7 @@
 :root {
   color-scheme: light;
   --scale-factor: 0.5;
+  --width-factor: 0.5;
   --size-unit: calc(1px * var(--scale-factor));
   --table-deep: #0b3053;
   --table-bright: #1769aa;
@@ -49,10 +50,16 @@ body {
 }
 
 .scale-wrapper {
-  width: min(calc(1160px * var(--scale-factor)), calc(100% * var(--scale-factor)));
+  width: min(calc(1160px * var(--scale-factor)), calc(100% * var(--width-factor)));
   margin-inline: auto;
   display: flex;
   justify-content: center;
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  :root {
+    --width-factor: 0.75;
+  }
 }
 
 main.tabletop {
