@@ -1,7 +1,7 @@
 function playCorrect() {}
 function playWrong() {}
 
-const APP_VERSION = "0.65.0";
+const APP_VERSION = "0.64.0";
 
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
