@@ -58,7 +58,7 @@ body {
 
 @media (max-width: 600px) and (orientation: portrait) {
   :root {
-    --width-factor: 0.75;
+    --width-factor: 0.86;
   }
 }
 
@@ -402,6 +402,7 @@ main.tabletop::after {
     --card-art-bg,
     linear-gradient(145deg, rgba(22, 108, 190, 0.85), rgba(8, 42, 76, 0.85))
   );
+  margin-bottom: clamp(0.6rem, calc(2.6vw * var(--scale-factor)), 0.95rem);
 }
 
 .card-art.with-sprite {
@@ -429,7 +430,7 @@ main.tabletop::after {
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
 .card-name {
@@ -441,19 +442,42 @@ main.tabletop::after {
 
 .card-types {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .card-types .type-badge {
-  min-width: clamp(calc(30px * var(--scale-factor)), calc(2.8vw * var(--scale-factor)), calc(38px * var(--scale-factor)));
-  min-height: clamp(calc(30px * var(--scale-factor)), calc(2.8vw * var(--scale-factor)), calc(38px * var(--scale-factor)));
-  padding: 0.28rem;
+  min-width: clamp(
+    calc(40px * var(--scale-factor)),
+    calc(3.6vw * var(--scale-factor)),
+    calc(56px * var(--scale-factor))
+  );
+  min-height: clamp(
+    calc(40px * var(--scale-factor)),
+    calc(3.6vw * var(--scale-factor)),
+    calc(56px * var(--scale-factor))
+  );
+  padding: 0.35rem;
 }
 
 .card-types-footer {
   justify-content: center;
   align-items: center;
+}
+
+.card-types .type-icon-wrap {
+  width: clamp(
+    calc(26px * var(--scale-factor)),
+    calc(3.2vw * var(--scale-factor)),
+    calc(36px * var(--scale-factor))
+  );
+  height: clamp(
+    calc(26px * var(--scale-factor)),
+    calc(3.2vw * var(--scale-factor)),
+    calc(36px * var(--scale-factor))
+  );
 }
 
 .hand {
@@ -474,10 +498,14 @@ main.tabletop::after {
   padding: 0;
   cursor: pointer;
   position: absolute;
-  --fan-step: calc(16 * var(--size-unit));
+  --fan-step: calc(30 * var(--size-unit));
   top: calc(var(--fan-index) * var(--fan-step));
   left: calc(50% + var(--fan-adjust));
-  --fan-spread: clamp(calc(80px * var(--scale-factor)), calc(18vw * var(--scale-factor)), calc(160px * var(--scale-factor)));
+  --fan-spread: clamp(
+    calc(110px * var(--scale-factor)),
+    calc(22vw * var(--scale-factor)),
+    calc(200px * var(--scale-factor))
+  );
   --fan-tilt: calc((var(--fan-index) - 1) * 4.5deg);
   --fan-shift: calc((var(--fan-index) - 1) * var(--fan-spread));
   --final-transform: translateX(-50%) translateX(var(--fan-shift)) rotate(var(--fan-tilt));
