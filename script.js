@@ -1,7 +1,7 @@
 function playCorrect() {}
 function playWrong() {}
 
-const APP_VERSION = "0.68.0";
+const APP_VERSION = "0.69.0";
 
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
@@ -1256,9 +1256,6 @@ function buildCard(pokemon, { variant }) {
 
   const header = document.createElement("div");
   header.className = "card-header";
-  const dexSpan = document.createElement("span");
-  dexSpan.textContent = `No. ${String(pokemon.dex).padStart(3, "0")}`;
-  header.appendChild(dexSpan);
   const typesStack = document.createElement("div");
   typesStack.className = "card-types";
   pokemon.types.forEach((type) => {
@@ -1287,12 +1284,6 @@ function buildCard(pokemon, { variant }) {
   nameHeading.className = "card-name";
   nameHeading.textContent = pokemon.name;
   body.appendChild(nameHeading);
-  const typeLine = document.createElement("div");
-  typeLine.className = "card-types card-types-footer";
-  pokemon.types.forEach((type) => {
-    typeLine.appendChild(createTypeBadge(type, { variant: "inline" }));
-  });
-  body.appendChild(typeLine);
 
   inner.appendChild(header);
   inner.appendChild(art);
