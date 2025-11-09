@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="tabletop">
-      <header class="game-header">
+    <div class="scale-wrapper">
+      <main class="tabletop">
+        <header class="game-header">
         <div class="title-block">
           <h1>Pokémon Type Battle Training</h1>
           <p>Deal your hand and choose the Pokémon whose type hits the defender hardest.</p>
@@ -39,8 +40,12 @@
       </div>
 
       <div id="announcement" class="announcement" aria-live="polite"></div>
-      <footer class="footer-note">Tip: Tap or click a comparison row to preview the matchup.</footer>
-    </main>
+      <footer class="footer-note">
+        Tip: Tap or click a comparison row to preview the matchup.<br />
+        <span class="version-tag">Version 0.53.0</span>
+      </footer>
+      </main>
+    </div>
 
     <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
       <div class="modal">
@@ -71,6 +76,24 @@
         <div class="modal-actions">
           <button id="close-modal" class="modal-btn secondary" type="button" disabled>Close</button>
           <button id="next-round" class="modal-btn primary" type="button" disabled>Next round</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="type-picker-backdrop"
+      class="type-picker-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="type-picker-title"
+      hidden
+    >
+      <div class="type-picker">
+        <h2 id="type-picker-title">Choose attack type</h2>
+        <p id="type-picker-prompt" class="type-picker-prompt"></p>
+        <div id="type-picker-options" class="type-picker-options"></div>
+        <div class="type-picker-actions">
+          <button id="type-picker-cancel" type="button" class="modal-btn secondary">Cancel</button>
         </div>
       </div>
     </div>

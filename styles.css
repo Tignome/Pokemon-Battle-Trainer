@@ -1,5 +1,7 @@
 :root {
   color-scheme: light;
+  --scale-factor: 0.5;
+  --size-unit: calc(1px * var(--scale-factor));
   --table-deep: #0b3053;
   --table-bright: #1769aa;
   --table-glow: rgba(255, 255, 255, 0.24);
@@ -21,6 +23,7 @@
   --table-parchment: #fff5df;
   --table-line: rgba(10, 27, 45, 0.12);
   font-family: "Futura", "Segoe UI", system-ui, sans-serif;
+  font-size: calc(16px * var(--scale-factor));
 }
 
 * {
@@ -36,23 +39,33 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: stretch;
-  padding: clamp(1.5rem, 4vw, 3rem);
+  align-items: flex-start;
+  padding: clamp(1.5rem, calc(4vw * var(--scale-factor)), 3rem);
   background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.25), transparent 55%),
     radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.18), transparent 60%),
     linear-gradient(140deg, var(--table-deep), #0c4678, var(--table-bright));
   color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+.scale-wrapper {
+  width: min(calc(1160px * var(--scale-factor)), calc(100% * var(--scale-factor)));
+  margin-inline: auto;
+  display: flex;
+  justify-content: center;
 }
 
 main.tabletop {
-  width: min(1160px, 100%);
+  width: 100%;
+  max-width: calc(1160px * var(--scale-factor));
   display: flex;
   flex-direction: column;
-  gap: clamp(1.2rem, 2vw, 1.8rem);
-  border-radius: 36px;
-  padding: clamp(1.75rem, 4vw, 2.75rem);
+  gap: clamp(1.2rem, calc(2vw * var(--scale-factor)), 1.8rem);
+  border-radius: calc(36 * var(--size-unit));
+  padding: clamp(1.75rem, calc(4vw * var(--scale-factor)), 2.75rem);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
-  box-shadow: 0 36px 72px rgba(5, 18, 38, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 calc(36 * var(--size-unit)) calc(72 * var(--size-unit)) rgba(5, 18, 38, 0.55),
+    inset 0 0 0 calc(1 * var(--size-unit)) rgba(255, 255, 255, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -60,9 +73,9 @@ main.tabletop {
 main.tabletop::before {
   content: "";
   position: absolute;
-  inset: 16px;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  inset: calc(16 * var(--size-unit));
+  border-radius: calc(28 * var(--size-unit));
+  border: calc(1 * var(--size-unit)) solid rgba(255, 255, 255, 0.28);
   pointer-events: none;
 }
 
@@ -86,21 +99,21 @@ main.tabletop::after {
 }
 
 .title-block {
-  max-width: 540px;
+  max-width: calc(540 * var(--size-unit));
   color: var(--text-light);
 }
 
 .title-block h1 {
   margin: 0;
-  font-size: clamp(2.1rem, 5vw, 3.15rem);
+  font-size: clamp(2.1rem, calc(5vw * var(--scale-factor)), 3.15rem);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 calc(14 * var(--size-unit)) calc(32 * var(--size-unit)) rgba(0, 0, 0, 0.55);
 }
 
 .title-block p {
   margin: 0.65rem 0 0;
-  font-size: clamp(1rem, 2.4vw, 1.25rem);
+  font-size: clamp(1rem, calc(2.4vw * var(--scale-factor)), 1.25rem);
   line-height: 1.5;
 }
 
@@ -116,8 +129,8 @@ main.tabletop::after {
   gap: 0.75rem;
   background: rgba(6, 22, 42, 0.55);
   padding: 0.65rem 1.1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: calc(18 * var(--size-unit));
+  border: calc(1 * var(--size-unit)) solid rgba(255, 255, 255, 0.24);
   backdrop-filter: blur(8px);
   color: var(--text-light);
   font-weight: 600;
@@ -127,7 +140,7 @@ main.tabletop::after {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  min-width: 96px;
+  min-width: calc(96 * var(--size-unit));
   text-align: right;
 }
 
@@ -152,7 +165,7 @@ main.tabletop::after {
   background: linear-gradient(135deg, #ffe082, #ffb347);
   color: #5d3200;
   cursor: pointer;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 calc(16 * var(--size-unit)) calc(32 * var(--size-unit)) rgba(0, 0, 0, 0.32);
   transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
 }
 
@@ -168,7 +181,7 @@ main.tabletop::after {
 
 .next-btn:not(:disabled):hover,
 .next-btn:not(:disabled):focus-visible {
-  transform: translateY(-2px);
+  transform: translateY(calc(-2 * var(--size-unit)));
   filter: brightness(1.05);
   outline: none;
 }
@@ -176,7 +189,7 @@ main.tabletop::after {
 .table-layout {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.2rem, 2vw, 1.8rem);
+  gap: clamp(1.2rem, calc(2vw * var(--scale-factor)), 1.8rem);
   position: relative;
   z-index: 1;
 }
@@ -184,9 +197,9 @@ main.tabletop::after {
 .defender-zone,
 .hand-zone {
   background: rgba(255, 255, 255, 0.18);
-  border-radius: 24px;
-  padding: clamp(1rem, 2vw, 1.6rem);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: calc(24 * var(--size-unit));
+  padding: clamp(1rem, calc(2vw * var(--scale-factor)), 1.6rem);
+  border: calc(1 * var(--size-unit)) solid rgba(255, 255, 255, 0.32);
   backdrop-filter: blur(6px);
 }
 
@@ -211,7 +224,7 @@ main.tabletop::after {
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-light);
-  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 calc(6 * var(--size-unit)) calc(18 * var(--size-unit)) rgba(0, 0, 0, 0.35);
 }
 
 .defender-types {
@@ -234,8 +247,8 @@ main.tabletop::after {
   font-weight: 600;
   background: var(--badge-bg);
   color: var(--badge-text);
-  border: 1px solid rgba(12, 27, 46, 0.1);
-  box-shadow: inset 0 1px 0 var(--card-highlight);
+  border: calc(1 * var(--size-unit)) solid rgba(12, 27, 46, 0.1);
+  box-shadow: inset 0 calc(1 * var(--size-unit)) 0 var(--card-highlight);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -246,12 +259,12 @@ main.tabletop::after {
 }
 
 .pokemon-card {
-  width: clamp(180px, 22vw, 260px);
+  width: clamp(calc(180px * var(--scale-factor)), calc(22vw * var(--scale-factor)), calc(260px * var(--scale-factor)));
   aspect-ratio: 63 / 88;
-  border-radius: 18px;
-  border: 6px solid var(--card-border);
+  border-radius: calc(18 * var(--size-unit));
+  border: calc(6 * var(--size-unit)) solid var(--card-border);
   background: var(--card-surface);
-  box-shadow: 0 18px 32px var(--card-shadow);
+  box-shadow: 0 calc(18 * var(--size-unit)) calc(32 * var(--size-unit)) var(--card-shadow);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -261,15 +274,15 @@ main.tabletop::after {
 }
 
 .defender-card {
-  width: clamp(220px, 28vw, 320px);
+  width: clamp(calc(220px * var(--scale-factor)), calc(28vw * var(--scale-factor)), calc(320px * var(--scale-factor)));
 }
 
 .pokemon-card::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  inset: calc(6 * var(--size-unit));
+  border-radius: calc(12 * var(--size-unit));
+  border: calc(1 * var(--size-unit)) solid rgba(255, 255, 255, 0.6);
   pointer-events: none;
 }
 
@@ -295,16 +308,16 @@ main.tabletop::after {
   position: relative;
   overflow: hidden;
   flex: 1;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  border-radius: calc(14 * var(--size-unit));
+  border: calc(1 * var(--size-unit)) solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 calc(1 * var(--size-unit)) rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.9);
   font-size: clamp(1.6rem, 4.2vw, 2.4rem);
   font-weight: 700;
-  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 calc(6 * var(--size-unit)) calc(18 * var(--size-unit)) rgba(0, 0, 0, 0.45);
   text-transform: uppercase;
   background: var(
     --card-art-bg,
@@ -312,13 +325,26 @@ main.tabletop::after {
   );
 }
 
+.card-art.with-sprite {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(10, 26, 46, 0.5));
+}
+
 .card-art::after {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: calc(14 * var(--size-unit));
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 55%);
   pointer-events: none;
+}
+
+.card-sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  transform: scale(1.08);
+  filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.35));
 }
 
 .card-body {
@@ -346,7 +372,7 @@ main.tabletop::after {
 }
 
 .card-type-text {
-  font-size: 0.85rem;
+  font-size: clamp(0.98rem, 2.2vw, 1.22rem);
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text-soft);
@@ -354,12 +380,12 @@ main.tabletop::after {
 
 .hand {
   position: relative;
-  min-height: clamp(260px, 30vw, 320px);
-  perspective: 1200px;
+  min-height: clamp(calc(260px * var(--scale-factor)), calc(30vw * var(--scale-factor)), calc(320px * var(--scale-factor)));
+  perspective: calc(1200px * var(--scale-factor));
   padding: 1.2rem 0;
   margin: 0 auto;
   width: 100%;
-  max-width: min(90vw, 560px);
+  max-width: min(calc(90vw * var(--scale-factor)), calc(560px * var(--scale-factor)));
   --fan-adjust: 0px;
 }
 
@@ -370,9 +396,10 @@ main.tabletop::after {
   padding: 0;
   cursor: pointer;
   position: absolute;
-  top: calc(var(--fan-index) * 16px);
+  --fan-step: calc(16 * var(--size-unit));
+  top: calc(var(--fan-index) * var(--fan-step));
   left: calc(50% + var(--fan-adjust));
-  --fan-spread: clamp(80px, 18vw, 160px);
+  --fan-spread: clamp(calc(80px * var(--scale-factor)), calc(18vw * var(--scale-factor)), calc(160px * var(--scale-factor)));
   --fan-tilt: calc((var(--fan-index) - 1) * 4.5deg);
   --fan-shift: calc((var(--fan-index) - 1) * var(--fan-spread));
   --final-transform: translateX(-50%) translateX(var(--fan-shift)) rotate(var(--fan-tilt));
@@ -383,14 +410,14 @@ main.tabletop::after {
 }
 
 .hand-card:focus-visible {
-  outline: 3px solid #ffb347;
-  outline-offset: 6px;
+  outline: calc(3 * var(--size-unit)) solid #ffb347;
+  outline-offset: calc(6 * var(--size-unit));
 }
 
 .hand-card:not(.disabled):hover .pokemon-card,
 .hand-card:not(.disabled):focus-visible .pokemon-card {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 24px 46px rgba(0, 0, 0, 0.45);
+  transform: translateY(calc(-6 * var(--size-unit))) scale(1.02);
+  box-shadow: 0 calc(24 * var(--size-unit)) calc(46 * var(--size-unit)) rgba(0, 0, 0, 0.45);
 }
 
 .hand-card.disabled {
@@ -402,14 +429,15 @@ main.tabletop::after {
 }
 
 .hand-card.selected .pokemon-card {
-  box-shadow: 0 28px 52px rgba(0, 0, 0, 0.55);
-  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 calc(28 * var(--size-unit)) calc(52 * var(--size-unit)) rgba(0, 0, 0, 0.55);
+  transform: translateY(calc(-10 * var(--size-unit))) scale(1.03);
 }
 
 @keyframes deal-card {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateX(var(--fan-shift)) translateY(-140px)
+    transform: translateX(-50%) translateX(var(--fan-shift))
+      translateY(calc(-140 * var(--size-unit)))
       rotate(calc(var(--fan-tilt) - 8deg));
   }
   to {
@@ -434,6 +462,15 @@ main.tabletop::after {
   font-size: 0.9rem;
 }
 
+.version-tag {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -444,17 +481,94 @@ main.tabletop::after {
   z-index: 1000;
 }
 
-.modal {
-  width: min(760px, 100%);
+.modal { 
+  width: min(calc(760px * var(--scale-factor)), 100%);
   background: linear-gradient(165deg, #ffe3f1, #fff0c2);
-  border-radius: 24px;
-  padding: clamp(1.5rem, 3vw, 2rem);
-  box-shadow: 0 24px 52px rgba(5, 18, 38, 0.55);
-  border: 2px solid rgba(255, 112, 187, 0.45);
+  border-radius: calc(24 * var(--size-unit));
+  padding: clamp(1.5rem, calc(3vw * var(--scale-factor)), 2rem);
+  box-shadow: 0 calc(24 * var(--size-unit)) calc(52 * var(--size-unit)) rgba(5, 18, 38, 0.55);
+  border: calc(2 * var(--size-unit)) solid rgba(255, 112, 187, 0.45);
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
   color: #381847;
+}
+
+.type-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 18, 38, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  z-index: 1100;
+}
+
+.type-picker {
+  width: min(calc(520px * var(--scale-factor)), 92%);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(214, 235, 255, 0.9));
+  border-radius: calc(24 * var(--size-unit));
+  padding: clamp(1.25rem, calc(3vw * var(--scale-factor)), 1.75rem);
+  box-shadow: 0 calc(22 * var(--size-unit)) calc(44 * var(--size-unit)) rgba(5, 18, 38, 0.45);
+  border: calc(2 * var(--size-unit)) solid rgba(23, 105, 170, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.type-picker h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.type-picker-prompt {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-soft);
+}
+
+.type-picker-options {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.type-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: calc(18 * var(--size-unit));
+  border: calc(2 * var(--size-unit)) solid rgba(23, 105, 170, 0.28);
+  background: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.type-picker-option .type-badge {
+  font-size: 0.85rem;
+}
+
+.type-picker-option:focus-visible,
+.type-picker-option:hover {
+  transform: translateY(calc(-2 * var(--size-unit)));
+  border-color: rgba(23, 105, 170, 0.6);
+  box-shadow: 0 calc(12 * var(--size-unit)) calc(24 * var(--size-unit)) rgba(6, 22, 42, 0.25);
+  outline: none;
+}
+
+.type-picker-label {
+  color: var(--text-dark);
+}
+
+.type-picker-actions {
+  display: flex;
+  justify-content: center;
 }
 
 .modal h2 {
@@ -524,9 +638,9 @@ main.tabletop::after {
   width: 100%;
   border-collapse: collapse;
   background: rgba(255, 255, 255, 0.92);
-  border-radius: 18px;
+  border-radius: calc(18 * var(--size-unit));
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(10, 27, 45, 0.08);
+  box-shadow: inset 0 0 0 calc(1 * var(--size-unit)) rgba(10, 27, 45, 0.08);
 }
 
 .comparison-table thead {
@@ -558,7 +672,7 @@ main.tabletop::after {
 }
 
 .comparison-row.optimal {
-  box-shadow: inset 0 0 0 2px rgba(255, 194, 46, 0.8);
+  box-shadow: inset 0 0 0 calc(2 * var(--size-unit)) rgba(255, 194, 46, 0.8);
 }
 
 .comparison-row.chosen {
@@ -566,7 +680,7 @@ main.tabletop::after {
 }
 
 .comparison-row.preview {
-  box-shadow: inset 0 0 0 2px rgba(23, 105, 170, 0.4);
+  box-shadow: inset 0 0 0 calc(2 * var(--size-unit)) rgba(23, 105, 170, 0.4);
 }
 
 .note-pill {
@@ -585,6 +699,12 @@ main.tabletop::after {
   margin-left: 0.35rem;
 }
 
+.multiplier-note {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-top: 0.1rem;
+}
+
 .why-lines {
   display: flex;
   flex-direction: column;
@@ -596,6 +716,15 @@ main.tabletop::after {
   display: flex;
   gap: 0.35rem;
   align-items: baseline;
+}
+
+.why-line.used {
+  font-weight: 700;
+  color: var(--mid);
+}
+
+.why-line.previewed {
+  text-decoration: underline;
 }
 
 .why-type {
@@ -636,7 +765,7 @@ main.tabletop::after {
 
 .modal-btn:not(:disabled):hover,
 .modal-btn:not(:disabled):focus-visible {
-  transform: translateY(-2px);
+  transform: translateY(calc(-2 * var(--size-unit)));
   filter: brightness(1.05);
   outline: none;
 }
@@ -644,11 +773,11 @@ main.tabletop::after {
 @media (max-width: 860px) {
   main.tabletop {
     padding: clamp(1.1rem, 4vw, 1.5rem);
-    border-radius: 28px;
+    border-radius: calc(28 * var(--size-unit));
   }
 
   .hand {
-    min-height: 280px;
+    min-height: calc(280px * var(--scale-factor));
   }
 }
 
@@ -673,7 +802,11 @@ main.tabletop::after {
   }
 
   .pokemon-card {
-    width: clamp(150px, 52vw, 220px);
+    width: clamp(
+      calc(150px * var(--scale-factor)),
+      calc(52vw * var(--scale-factor)),
+      calc(220px * var(--scale-factor))
+    );
   }
 
   .modal {

@@ -43,6 +43,25 @@ const TYPE_COLORS = {
   fairy: "#D685AD",
 };
 
+const SPRITE_SOURCE_PRIMARY_HTML =
+  "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.html";
+const SPRITE_SOURCE_PRIMARY_CSV =
+  "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.csv";
+const SPRITE_SOURCE_FALLBACK_HTML =
+  "https://cdn.jsdelivr.net/gh/Tignome/pokedex-assets@main/pokedex_sprites_1_1025.html";
+const SPRITE_SOURCE_FALLBACK_CSV =
+  "https://cdn.jsdelivr.net/gh/Tignome/pokedex-assets@main/pokedex_sprites_1_1025.csv";
+
+const SPRITE_SOURCES = [
+  SPRITE_SOURCE_PRIMARY_HTML,
+  SPRITE_SOURCE_PRIMARY_CSV,
+  SPRITE_SOURCE_FALLBACK_HTML,
+  SPRITE_SOURCE_FALLBACK_CSV,
+];
+
+const FALLBACK_SPRITE_BASE =
+  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/";
+
 const POKEMON_DATA = `
 Corsola (Galarian), 222, ghost, none
 Cradily, 346, rock, grass
@@ -355,11 +374,18 @@ const state = {
   hand: [],
   matchups: [],
   bestIndex: null,
+  bestMultiplier: 1,
   chosenIndex: null,
+  chosenType: null,
+  chosenResult: null,
   previewIndex: null,
+  previewResult: null,
   locked: false,
+  typePickerOpen: false,
+  pendingIndex: null,
   handButtons: [],
   comparisonRows: [],
+  spriteMap: new Map(),
 };
 
 const elements = {
@@ -379,6 +405,11 @@ const elements = {
   comparisonBody: null,
   closeModal: null,
   nextRound: null,
+  typePickerBackdrop: null,
+  typePickerTitle: null,
+  typePickerPrompt: null,
+  typePickerOptions: null,
+  typePickerCancel: null,
 };
 
 let pendingResize = null;
@@ -400,6 +431,11 @@ function cacheElements() {
   elements.comparisonBody = document.getElementById("comparison-body");
   elements.closeModal = document.getElementById("close-modal");
   elements.nextRound = document.getElementById("next-round");
+  elements.typePickerBackdrop = document.getElementById("type-picker-backdrop");
+  elements.typePickerTitle = document.getElementById("type-picker-title");
+  elements.typePickerPrompt = document.getElementById("type-picker-prompt");
+  elements.typePickerOptions = document.getElementById("type-picker-options");
+  elements.typePickerCancel = document.getElementById("type-picker-cancel");
 }
 
 function bindEvents() {
@@ -416,9 +452,27 @@ function bindEvents() {
     });
   }
 
+  if (elements.typePickerCancel) {
+    elements.typePickerCancel.addEventListener("click", () => closeTypePicker(true));
+  }
+
+  if (elements.typePickerBackdrop) {
+    elements.typePickerBackdrop.addEventListener("click", (event) => {
+      if (event.target === elements.typePickerBackdrop) {
+        closeTypePicker(true);
+      }
+    });
+  }
+
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && elements.modalBackdrop && !elements.modalBackdrop.hidden) {
-      closeModal(true);
+    if (event.key === "Escape") {
+      if (elements.typePickerBackdrop && !elements.typePickerBackdrop.hidden) {
+        closeTypePicker(true);
+        return;
+      }
+      if (elements.modalBackdrop && !elements.modalBackdrop.hidden) {
+        closeModal(true);
+      }
     }
   });
 
@@ -433,9 +487,10 @@ function bindEvents() {
   });
 }
 
-function init() {
+async function init() {
   cacheElements();
   bindEvents();
+  await primeSpriteAtlas();
   startNextRound();
 }
 
@@ -461,10 +516,18 @@ function startNextRound() {
   }
   state.locked = false;
   state.chosenIndex = null;
+  state.chosenType = null;
+  state.chosenResult = null;
   state.previewIndex = null;
+  state.previewResult = null;
+  state.bestIndex = null;
+  state.bestMultiplier = 1;
+  state.typePickerOpen = false;
+  state.pendingIndex = null;
   state.matchups = [];
   state.handButtons = [];
   state.comparisonRows = [];
+  closeTypePicker(true);
   dealRound();
 }
 
@@ -481,6 +544,7 @@ function dealRound() {
     const evaluation = evaluateBest(matchups);
     winners = evaluation.winners;
     state.bestIndex = winners[0] ?? 0;
+    state.bestMultiplier = evaluation.bestMultiplier;
     attempts += 1;
     if (winners.length === 1) {
       break;
@@ -490,6 +554,7 @@ function dealRound() {
   if (winners.length !== 1) {
     const fallback = evaluateBest(matchups);
     state.bestIndex = fallback.winners[0];
+    state.bestMultiplier = fallback.bestMultiplier;
   }
 
   state.hand = hand;
@@ -656,15 +721,40 @@ function alignHandFan() {
 }
 
 function resolveSelection(index) {
-  if (state.locked) return;
+  if (state.locked || state.typePickerOpen) return;
   if (!Number.isInteger(index) || index < 0 || index >= state.matchups.length) {
     return;
   }
+  const pokemon = state.hand[index];
+  if (!pokemon) return;
+  if (pokemon.types.length > 1) {
+    openTypePicker(index);
+    return;
+  }
+  finalizeSelection(index, pokemon.types[0]);
+}
+
+function finalizeSelection(index, type) {
+  const match = state.matchups[index];
+  const pokemon = state.hand[index];
+  if (!match || !pokemon) return;
+
+  const chosenResult = match.results.find((entry) => entry.type === type) || match.bestTypes[0] || match.results[0];
   state.locked = true;
+  state.typePickerOpen = false;
+  state.pendingIndex = null;
   state.chosenIndex = index;
+  state.chosenType = chosenResult?.type || type || pokemon.types[0];
+  state.chosenResult = chosenResult;
   state.previewIndex = index;
+  state.previewResult = chosenResult;
   state.rounds += 1;
-  const correct = index === state.bestIndex;
+
+  const chosenMultiplier = chosenResult ? chosenResult.multiplier : 0;
+  const bestMatch = state.matchups[state.bestIndex];
+  const bestMultiplier = bestMatch ? bestMatch.bestMultiplier : state.bestMultiplier;
+  const correct = index === state.bestIndex && nearlyEqual(chosenMultiplier, bestMultiplier);
+
   if (correct) {
     state.score += 1;
     state.streak += 1;
@@ -673,11 +763,94 @@ function resolveSelection(index) {
   } else {
     state.streak = 0;
     playWrong();
-    updateAnnouncement("That wasn't the strongest option. Review the breakdown below.");
+  updateAnnouncement("That wasn't the strongest option. Review the breakdown below.");
   }
+
   updateScorebar();
   lockHand(index);
   showResult();
+}
+
+function openTypePicker(index) {
+  const pokemon = state.hand[index];
+  if (!pokemon) return;
+  if (!elements.typePickerBackdrop || !elements.typePickerOptions) {
+    finalizeSelection(index, pokemon.types[0]);
+    return;
+  }
+
+  state.typePickerOpen = true;
+  state.pendingIndex = index;
+  elements.typePickerBackdrop.hidden = false;
+
+  if (elements.typePickerTitle) {
+    elements.typePickerTitle.textContent = "Choose attack type";
+  }
+  if (elements.typePickerPrompt) {
+    const formattedTypes = pokemon.types.map((type) => formatType(type)).join(" or ");
+    elements.typePickerPrompt.textContent = `${pokemon.name} can attack as ${formattedTypes}. Select one.`;
+  }
+
+  elements.typePickerOptions.innerHTML = "";
+  const buttons = [];
+  pokemon.types.forEach((type) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "type-picker-option";
+    option.dataset.type = type;
+    const badge = createTypeBadge(type);
+    option.appendChild(badge);
+    const label = document.createElement("span");
+    label.className = "type-picker-label";
+    label.textContent = formatType(type);
+    option.appendChild(label);
+    option.addEventListener("click", () => {
+      closeTypePicker(false);
+      finalizeSelection(index, type);
+    });
+    elements.typePickerOptions.appendChild(option);
+    buttons.push(option);
+  });
+
+  requestAnimationFrame(() => {
+    if (buttons[0]) {
+      buttons[0].focus();
+    }
+  });
+}
+
+function closeTypePicker(cancelled) {
+  const previousIndex = state.pendingIndex;
+  state.typePickerOpen = false;
+  state.pendingIndex = null;
+
+  if (!elements.typePickerBackdrop) {
+    if (cancelled && Number.isInteger(previousIndex)) {
+      const button = state.handButtons[previousIndex];
+      if (button) {
+        button.focus();
+      }
+    }
+    return;
+  }
+
+  if (!elements.typePickerBackdrop.hidden) {
+    elements.typePickerBackdrop.hidden = true;
+  }
+
+  if (elements.typePickerOptions) {
+    elements.typePickerOptions.innerHTML = "";
+  }
+  if (elements.typePickerPrompt) {
+    elements.typePickerPrompt.textContent = "";
+  }
+
+  if (cancelled && Number.isInteger(previousIndex)) {
+    const button = state.handButtons[previousIndex];
+    if (button) {
+      button.focus();
+    }
+  }
 }
 
 function lockHand(chosenIndex) {
@@ -722,15 +895,23 @@ function renderDefenderBadges() {
 }
 
 function previewMatch(index, announce = true) {
-  state.previewIndex = index;
   const match = state.matchups[index];
   if (!match) return;
+  state.previewIndex = index;
   const isChosen = index === state.chosenIndex;
   const prefix = isChosen ? "You chose" : "Preview";
   const defenderName = state.defender.name;
-  const bestType = match.bestTypes[0] ?? match.results[0];
-  const bestMultiplier = match.bestMultiplier;
-  const typeLabel = bestType ? formatType(bestType.type) : "Unknown";
+  let displayResult = null;
+  if (isChosen && state.chosenResult) {
+    displayResult = state.chosenResult;
+  } else {
+    displayResult = match.bestTypes[0] ?? match.results[0];
+  }
+
+  state.previewResult = displayResult;
+
+  const bestMultiplier = displayResult ? displayResult.multiplier : match.bestMultiplier;
+  const typeLabel = displayResult ? formatType(displayResult.type) : "Unknown";
   if (elements.resultSummary) {
     elements.resultSummary.textContent = `${prefix} ${match.pokemon.name} (${typeLabel}) vs ${defenderName} → ${verdictText(bestMultiplier)} (×${bestMultiplier})`;
     elements.resultSummary.className = "result-summary";
@@ -740,7 +921,7 @@ function previewMatch(index, announce = true) {
     elements.resultVerdict.textContent = verdictText(bestMultiplier);
     elements.resultVerdict.className = `result-verdict ${verdictClass}`;
   }
-  renderExplanationList(bestType);
+  renderExplanationList(displayResult);
   highlightPreviewRow(index);
   if (!isChosen && announce) {
     updateAnnouncement(`Previewing ${match.pokemon.name}'s matchup details.`);
@@ -797,12 +978,27 @@ function renderComparison() {
     pokemonCell.appendChild(buildTablePokemonCell(match.pokemon));
 
     const multiplierCell = document.createElement("td");
-    multiplierCell.textContent = `×${match.bestMultiplier}`;
+    const chosenMultiplier =
+      index === state.chosenIndex && state.chosenResult ? state.chosenResult.multiplier : null;
+    const displayMultiplier = chosenMultiplier ?? match.bestMultiplier;
+    multiplierCell.textContent = `×${displayMultiplier}`;
+    if (
+      chosenMultiplier != null &&
+      !nearlyEqual(chosenMultiplier, match.bestMultiplier)
+    ) {
+      const sub = document.createElement("div");
+      sub.className = "multiplier-note";
+      sub.textContent = `(Max ×${match.bestMultiplier})`;
+      multiplierCell.appendChild(sub);
+    }
 
     const notesCell = document.createElement("td");
     const notes = [];
     if (index === state.chosenIndex) notes.push("Chosen");
     if (index === state.bestIndex) notes.push("Optimal");
+    if (index === state.chosenIndex && state.chosenType) {
+      notes.push(`Using ${formatType(state.chosenType)}`);
+    }
     notes.forEach((note) => {
       const pill = document.createElement("span");
       pill.className = "note-pill";
@@ -811,7 +1007,7 @@ function renderComparison() {
     });
 
     const whyCell = document.createElement("td");
-    whyCell.appendChild(buildWhyLines(match));
+    whyCell.appendChild(buildWhyLines(match, index));
 
     row.appendChild(pokemonCell);
     row.appendChild(multiplierCell);
@@ -821,12 +1017,44 @@ function renderComparison() {
     elements.comparisonBody.appendChild(row);
     state.comparisonRows.push(row);
   });
+
+  updateWhyHighlights();
 }
 
 function highlightPreviewRow(index) {
   state.comparisonRows.forEach((row) => {
     row.classList.toggle("preview", row.dataset.index === String(index));
   });
+  updateWhyHighlights();
+}
+
+function updateWhyHighlights() {
+  state.comparisonRows.forEach((row) => {
+    const rowIndex = parseInt(row.dataset.index, 10);
+    if (Number.isNaN(rowIndex)) return;
+    const match = state.matchups[rowIndex];
+    if (!match) return;
+    const previewType = getPreviewTypeForRow(rowIndex, match);
+    const isChosenRow = state.chosenIndex === rowIndex;
+    row.querySelectorAll(".why-line").forEach((line) => {
+      const lineType = line.dataset.type;
+      const isChosenType = isChosenRow && state.chosenType === lineType;
+      const isPreviewType = previewType === lineType;
+      line.classList.toggle("used", Boolean(isChosenType));
+      line.classList.toggle("previewed", Boolean(isPreviewType));
+    });
+  });
+}
+
+function getPreviewTypeForRow(index, match) {
+  if (state.previewIndex === index && state.previewResult) {
+    return state.previewResult.type;
+  }
+  if (state.chosenIndex === index && state.chosenResult) {
+    return state.chosenResult.type;
+  }
+  const fallback = match.bestTypes[0] || match.results[0];
+  return fallback ? fallback.type : null;
 }
 
 function buildCard(pokemon, { variant }) {
@@ -853,7 +1081,19 @@ function buildCard(pokemon, { variant }) {
   const art = document.createElement("div");
   art.className = "card-art";
   art.style.setProperty("--card-art-bg", cardGradient(pokemon.types));
-  art.textContent = initialsFor(pokemon.name);
+  const spriteUrl = pokemon.sprite || state.spriteMap.get(pokemon.dex) || null;
+  if (spriteUrl) {
+    art.classList.add("with-sprite");
+    const img = document.createElement("img");
+    img.src = spriteUrl;
+    img.alt = `${pokemon.name} sprite`;
+    img.className = "card-sprite";
+    img.loading = "lazy";
+    img.decoding = "async";
+    art.appendChild(img);
+  } else {
+    art.textContent = initialsFor(pokemon.name);
+  }
 
   const body = document.createElement("div");
   body.className = "card-body";
@@ -888,12 +1128,14 @@ function buildTablePokemonCell(pokemon) {
   return wrapper;
 }
 
-function buildWhyLines(match) {
+function buildWhyLines(match, index) {
   const container = document.createElement("div");
   container.className = "why-lines";
+  const previewType = getPreviewTypeForRow(index, match);
   match.results.forEach((result) => {
     const line = document.createElement("div");
     line.className = "why-line";
+    line.dataset.type = result.type;
     const typeSpan = document.createElement("span");
     typeSpan.className = "why-type";
     typeSpan.textContent = formatType(result.type);
@@ -906,6 +1148,12 @@ function buildWhyLines(match) {
     });
     detail.textContent = segments.join(" • ");
     line.appendChild(detail);
+    if (state.chosenIndex === index && state.chosenType === result.type) {
+      line.classList.add("used");
+    }
+    if (previewType === result.type) {
+      line.classList.add("previewed");
+    }
     container.appendChild(line);
   });
   return container;
@@ -1078,6 +1326,7 @@ function parsePokemonData(raw) {
         name,
         dex,
         types,
+        sprite: null,
       };
     });
 }
@@ -1085,4 +1334,161 @@ function parsePokemonData(raw) {
 function normalizeType(value) {
   if (!value) return null;
   return value.toLowerCase();
+}
+
+async function primeSpriteAtlas() {
+  if (typeof fetch !== "function") {
+    return;
+  }
+
+  let resolvedMap = null;
+  for (const source of SPRITE_SOURCES) {
+    try {
+      const map = await loadSpriteMap(source);
+      if (!resolvedMap) {
+        resolvedMap = map;
+      }
+      if (map.size) {
+        resolvedMap = map;
+        break;
+      }
+    } catch (error) {
+      console.warn(`Failed to load sprite atlas from ${source}`, error);
+    }
+  }
+
+  state.spriteMap = resolvedMap || new Map();
+
+  ROSTER.forEach((pokemon) => {
+    if (!pokemon.sprite) {
+      const mappedSprite = state.spriteMap.get(pokemon.dex);
+      if (mappedSprite) {
+        pokemon.sprite = mappedSprite;
+      } else {
+        const fallback = fallbackSpriteUrl(pokemon.dex);
+        if (fallback) {
+          pokemon.sprite = fallback;
+        }
+      }
+    }
+  });
+}
+
+async function loadSpriteMap(url) {
+  const response = await fetch(url, { cache: "no-store", mode: "cors" });
+  if (!response.ok) {
+    throw new Error(`Sprite atlas request failed with status ${response.status}`);
+  }
+  const text = await response.text();
+  return parseSpriteText(text, response.url || url);
+}
+
+function fallbackSpriteUrl(dex) {
+  if (!Number.isInteger(dex) || dex <= 0) {
+    return "";
+  }
+  return `${FALLBACK_SPRITE_BASE}${dex}.png`;
+}
+
+function parseSpriteText(text, baseUrl) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) {
+    return new Map();
+  }
+  if (trimmed.startsWith("<")) {
+    const htmlMap = parseSpriteHtml(trimmed, baseUrl);
+    if (htmlMap.size > 0) {
+      return htmlMap;
+    }
+  }
+  return parseSpriteCsv(trimmed, baseUrl);
+}
+
+function parseSpriteHtml(html, baseUrl) {
+  const map = new Map();
+  if (typeof DOMParser !== "function") {
+    return map;
+  }
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const rows = Array.from(doc.querySelectorAll("table tr"));
+    if (!rows.length) {
+      return map;
+    }
+
+    let headerCells = null;
+    let dexIndex = 0;
+    let urlIndex = 1;
+    rows.forEach((row) => {
+      const cells = Array.from(row.querySelectorAll("th, td"));
+      if (!cells.length) {
+        return;
+      }
+      if (!headerCells) {
+        headerCells = cells.map((cell) => cell.textContent.trim().toLowerCase());
+        dexIndex = resolveIndex(headerCells, "pokedex", 0);
+        urlIndex = resolveIndex(headerCells, "sprite", Math.max(headerCells.length - 1, 1));
+        return;
+      }
+      const dexText = cells[dexIndex] ? cells[dexIndex].textContent.trim() : "";
+      const urlCell = cells[urlIndex];
+      const image = urlCell ? urlCell.querySelector("img") : null;
+      const rawUrl = image ? image.getAttribute("src") : urlCell?.textContent.trim();
+      const spriteUrl = normalizeSpriteUrl(rawUrl, baseUrl);
+      const dex = parseInt(dexText, 10);
+      if (!Number.isInteger(dex) || !spriteUrl) {
+        return;
+      }
+      map.set(dex, spriteUrl);
+    });
+  } catch (error) {
+    console.warn("Failed to parse sprite HTML", error);
+  }
+  return map;
+}
+
+function parseSpriteCsv(text, baseUrl) {
+  const map = new Map();
+  const lines = text.trim().split(/\r?\n/);
+  if (!lines.length) {
+    return map;
+  }
+  const header = lines.shift();
+  const columns = header.split(",").map((col) => col.trim().toLowerCase());
+  const dexIndex = resolveIndex(columns, "pokedex", 0);
+  const urlIndex = resolveIndex(columns, "sprite", Math.max(columns.length - 1, 1));
+  lines.forEach((line) => {
+    if (!line) return;
+    const parts = line.split(",");
+    const dexValue = parts[dexIndex] ?? parts[0];
+    const urlValue = parts[urlIndex] ?? parts[parts.length - 1];
+    const dex = parseInt(dexValue, 10);
+    const spriteUrl = normalizeSpriteUrl(urlValue ? urlValue.trim() : "", baseUrl);
+    if (Number.isInteger(dex) && spriteUrl) {
+      map.set(dex, spriteUrl);
+    }
+  });
+  return map;
+}
+
+function resolveIndex(columns, keyword, fallback) {
+  const index = columns.findIndex((col) => col.includes(keyword));
+  return index >= 0 ? index : fallback;
+}
+
+function normalizeSpriteUrl(rawUrl, baseUrl) {
+  if (!rawUrl) {
+    return "";
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return "";
+  }
+  try {
+    const resolved = new URL(trimmed, baseUrl);
+    return resolved.href;
+  } catch (error) {
+    return trimmed;
+  }
 }
