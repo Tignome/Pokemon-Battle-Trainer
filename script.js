@@ -43,6 +43,8 @@ const TYPE_COLORS = {
   fairy: "#D685AD",
 };
 
+const TYPE_LIST = Object.keys(TYPE_CHART);
+
 const SPRITE_SOURCE_PRIMARY_HTML =
   "https://raw.githubusercontent.com/Tignome/pokedex-assets/main/pokedex_sprites_1_1025.html";
 const SPRITE_SOURCE_PRIMARY_CSV =
@@ -795,7 +797,8 @@ function openTypePicker(index) {
   }
   if (elements.typePickerPrompt) {
     const formattedTypes = pokemon.types.map((type) => formatType(type)).join(" or ");
-    elements.typePickerPrompt.textContent = `${pokemon.name} can attack as ${formattedTypes}. Select one.`;
+    const prompt = `${pokemon.name} can attack as ${formattedTypes}. Select one.`;
+    renderTextWithTypeIcons(elements.typePickerPrompt, prompt);
   }
 
   elements.typePickerOptions.innerHTML = "";
@@ -808,7 +811,7 @@ function openTypePicker(index) {
     const badge = createTypeBadge(type);
     option.appendChild(badge);
     const label = document.createElement("span");
-    label.className = "type-picker-label";
+    label.className = "type-picker-label sr-only";
     label.textContent = formatType(type);
     option.appendChild(label);
     option.addEventListener("click", () => {
@@ -946,7 +949,7 @@ function updateResultAdvice() {
     message = "Review the matchup breakdown below to see which Pokémon was strongest and why.";
   }
 
-  elements.resultAdvice.textContent = message;
+  renderTextWithTypeIcons(elements.resultAdvice, message);
 }
 
 function describeResultReason(result) {
@@ -1057,7 +1060,8 @@ function renderExplanationList(bestType) {
   bestType.perType.forEach((entry) => {
     const li = document.createElement("li");
     const descriptor = verdictText(entry.multiplier);
-    li.textContent = `×${entry.multiplier} vs ${formatType(entry.defender)} (${descriptor})`;
+    const text = `×${entry.multiplier} vs ${formatType(entry.defender)} (${descriptor})`;
+    renderTextWithTypeIcons(li, text);
     elements.explanations.appendChild(li);
   });
 }
@@ -1124,7 +1128,7 @@ function renderComparison() {
     notes.forEach((note) => {
       const pill = document.createElement("span");
       pill.className = "note-pill";
-      pill.textContent = note;
+      renderTextWithTypeIcons(pill, note);
       notesCell.appendChild(pill);
     });
 
@@ -1222,11 +1226,10 @@ function buildCard(pokemon, { variant }) {
   nameHeading.textContent = pokemon.name;
   body.appendChild(nameHeading);
   const typeLine = document.createElement("div");
-  typeLine.className = "card-types";
-  const typeText = document.createElement("span");
-  typeText.className = "card-type-text";
-  typeText.textContent = pokemon.types.map((type) => formatType(type)).join(" / ");
-  typeLine.appendChild(typeText);
+  typeLine.className = "card-types card-types-footer";
+  pokemon.types.forEach((type) => {
+    typeLine.appendChild(createTypeBadge(type));
+  });
   body.appendChild(typeLine);
 
   inner.appendChild(header);
@@ -1319,7 +1322,7 @@ function buildWhyLines(match, index) {
     line.dataset.type = result.type;
     const typeSpan = document.createElement("span");
     typeSpan.className = "why-type";
-    typeSpan.textContent = formatType(result.type);
+    renderTextWithTypeIcons(typeSpan, formatType(result.type));
     line.appendChild(typeSpan);
     const detail = document.createElement("span");
     detail.className = "why-detail";
@@ -1327,7 +1330,7 @@ function buildWhyLines(match, index) {
       const descriptor = verdictText(entry.multiplier);
       return `${formatType(entry.defender)} ×${entry.multiplier} (${descriptor})`;
     });
-    detail.textContent = segments.join(" • ");
+    renderTextWithTypeIcons(detail, segments.join(" • "));
     line.appendChild(detail);
     if (state.chosenIndex === index && state.chosenType === result.type) {
       line.classList.add("used");
@@ -1368,29 +1371,39 @@ function typeIconCandidates(type) {
   return candidates;
 }
 
-function createTypeBadge(type) {
+function createTypeBadge(type, options = {}) {
+  const { variant = "badge" } = options;
   const span = document.createElement("span");
-  span.className = "type-badge type-no-icon";
+  const classes = [variant === "inline" ? "type-icon-inline" : "type-badge", "type-no-icon"];
+  span.className = classes.join(" ");
   span.dataset.type = type;
-  const base = TYPE_COLORS[type] ?? "#9aa5b1";
-  const lighter = mixColor(base, "#ffffff", 0.25);
-  span.style.background = `linear-gradient(135deg, ${lighter}, ${base})`;
-  span.style.color = readableTextColor(base);
 
-  const label = document.createElement("span");
-  label.className = "type-label";
-  label.textContent = formatType(type);
+  if (variant === "badge") {
+    const base = TYPE_COLORS[type] ?? "#9aa5b1";
+    const lighter = mixColor(base, "#ffffff", 0.25);
+    span.style.background = `linear-gradient(135deg, ${lighter}, ${base})`;
+    span.style.color = readableTextColor(base);
+  }
 
   const candidates = typeIconCandidates(type);
+  const iconWrap = document.createElement("span");
+  iconWrap.className = "type-icon-wrap";
+  iconWrap.setAttribute("aria-hidden", "true");
+  const img = document.createElement("img");
+  img.className = "type-icon";
+  img.alt = "";
+  img.loading = "lazy";
+  img.decoding = "async";
+
+  const fallback = document.createElement("span");
+  fallback.className = "type-fallback";
+  fallback.textContent = formatType(type).charAt(0);
+
+  const srLabel = document.createElement("span");
+  srLabel.className = "sr-only";
+  srLabel.textContent = formatType(type);
+
   if (candidates.length) {
-    const iconWrap = document.createElement("span");
-    iconWrap.className = "type-icon-wrap";
-    iconWrap.setAttribute("aria-hidden", "true");
-    const img = document.createElement("img");
-    img.className = "type-icon";
-    img.alt = "";
-    img.loading = "lazy";
-    img.decoding = "async";
     let index = 0;
     const tryNext = () => {
       if (index >= candidates.length) {
@@ -1415,7 +1428,8 @@ function createTypeBadge(type) {
     tryNext();
   }
 
-  span.appendChild(label);
+  span.appendChild(fallback);
+  span.appendChild(srLabel);
   return span;
 }
 
@@ -1505,6 +1519,44 @@ function formatList(items) {
 function formatType(type) {
   if (!type) return "None";
   return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+const TYPE_DISPLAY_TO_CANONICAL = TYPE_LIST.reduce((acc, type) => {
+  acc[formatType(type)] = type;
+  return acc;
+}, {});
+
+const TYPE_NAME_REGEX = new RegExp(
+  `\\b(${TYPE_LIST.map((type) => formatType(type)).join("|")})\\b`,
+  "g"
+);
+
+function renderTextWithTypeIcons(element, text) {
+  if (!element) return;
+  element.innerHTML = "";
+  if (!text) return;
+
+  TYPE_NAME_REGEX.lastIndex = 0;
+  let lastIndex = 0;
+  let match;
+  while ((match = TYPE_NAME_REGEX.exec(text)) !== null) {
+    const preceding = text.slice(lastIndex, match.index);
+    if (preceding) {
+      element.append(preceding);
+    }
+    const display = match[1];
+    const canonical = TYPE_DISPLAY_TO_CANONICAL[display] || display.toLowerCase();
+    if (canonical && canonical !== "none") {
+      element.appendChild(createTypeBadge(canonical, { variant: "inline" }));
+    } else {
+      element.append(display);
+    }
+    lastIndex = TYPE_NAME_REGEX.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    element.append(text.slice(lastIndex));
+  }
 }
 
 function readableTextColor(hex) {

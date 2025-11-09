@@ -241,26 +241,25 @@ main.tabletop::after {
 }
 
 .type-badge {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: calc(6 * var(--size-unit));
-  padding: 0.22rem 0.65rem;
-  border-radius: 999px;
+  justify-content: center;
+  padding: 0.35rem;
+  border-radius: 0.85rem;
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--badge-bg);
   color: var(--badge-text);
-  border: calc(1 * var(--size-unit)) solid rgba(12, 27, 46, 0.1);
+  border: calc(1 * var(--size-unit)) solid rgba(12, 27, 46, 0.18);
   box-shadow: inset 0 calc(1 * var(--size-unit)) 0 var(--card-highlight);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  min-width: clamp(calc(34px * var(--scale-factor)), calc(3vw * var(--scale-factor)), calc(42px * var(--scale-factor)));
+  min-height: clamp(calc(34px * var(--scale-factor)), calc(3vw * var(--scale-factor)), calc(42px * var(--scale-factor)));
+  vertical-align: middle;
 }
 
-.type-badge .type-label {
-  line-height: 1.1;
-}
-
-.type-badge .type-icon-wrap {
+.type-badge .type-icon-wrap,
+.type-icon-inline .type-icon-wrap {
   width: clamp(calc(22px * var(--scale-factor)), calc(2.6vw * var(--scale-factor)), calc(28px * var(--scale-factor)));
   height: clamp(calc(22px * var(--scale-factor)), calc(2.6vw * var(--scale-factor)), calc(28px * var(--scale-factor)));
   display: inline-flex;
@@ -269,7 +268,8 @@ main.tabletop::after {
   filter: drop-shadow(0 calc(3 * var(--size-unit)) calc(6 * var(--size-unit)) rgba(0, 0, 0, 0.3));
 }
 
-.type-badge .type-icon {
+.type-badge .type-icon,
+.type-icon-inline .type-icon {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -277,6 +277,52 @@ main.tabletop::after {
 
 .type-badge.type-no-icon {
   gap: 0;
+}
+
+.type-icon-inline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(calc(26px * var(--scale-factor)), calc(2.4vw * var(--scale-factor)), calc(30px * var(--scale-factor)));
+  height: clamp(calc(26px * var(--scale-factor)), calc(2.4vw * var(--scale-factor)), calc(30px * var(--scale-factor)));
+  margin: 0 0.2rem;
+  color: currentColor;
+  vertical-align: middle;
+}
+
+.type-icon-inline.type-no-icon {
+  border: calc(1 * var(--size-unit)) solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.type-fallback {
+  font-weight: 700;
+  font-size: clamp(0.68rem, 1.8vw, 0.78rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: currentColor;
+}
+
+.type-icon-inline .type-fallback {
+  font-size: clamp(0.65rem, 1.6vw, 0.75rem);
+}
+
+.type-has-icon .type-fallback {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .defender-slot {
@@ -393,15 +439,13 @@ main.tabletop::after {
 }
 
 .card-types .type-badge {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.6rem;
+  min-width: clamp(calc(30px * var(--scale-factor)), calc(2.8vw * var(--scale-factor)), calc(38px * var(--scale-factor)));
+  min-height: clamp(calc(30px * var(--scale-factor)), calc(2.8vw * var(--scale-factor)), calc(38px * var(--scale-factor)));
+  padding: 0.28rem;
 }
 
-.card-type-text {
-  font-size: clamp(0.98rem, 2.2vw, 1.22rem);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-soft);
+.card-types-footer {
+  justify-content: center;
 }
 
 .hand {
@@ -765,6 +809,8 @@ main.tabletop::after {
 
 .why-type {
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
 }
 
 .modal-actions {
