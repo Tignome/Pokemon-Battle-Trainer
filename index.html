@@ -1,1 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        img-src 'self' https: data:;
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        connect-src 'self' https:;
+        font-src 'self' https:;
+        base-uri 'self';
+        frame-ancestors 'none';
+        form-action 'self';
+        upgrade-insecure-requests
+      "
+    />
+    <title>Pokémon Battle Training</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="scale-wrapper">
+      <main class="tabletop">
+        <header class="game-header">
+        <div class="title-block">
+          <h1>Pokémon Battle Training</h1>
+          <p>Deal your hand and choose the Pokémon whose type hits the defender hardest.</p>
+        </div>
+        <div class="status-panel">
+          <div class="scorebar" aria-live="polite">
+            <div class="score-pill"><span>Score</span><span id="score">0/0</span></div>
+            <div class="score-pill"><span>Streak</span><span id="streak">0</span></div>
+          </div>
+          <button id="next-btn" class="next-btn" type="button" hidden>Deal next round</button>
+        </div>
+      </header>
 
+      <div class="table-layout">
+        <section class="defender-zone">
+          <h2>Defending Pokémon</h2>
+          <div class="defender-meta">
+            <div id="defender-name" class="defender-name"></div>
+            <div id="defender-types" class="defender-types"></div>
+          </div>
+          <div id="defender-card" class="defender-slot"></div>
+        </section>
+
+        <section class="hand-zone">
+          <h2>Attack hand</h2>
+          <div id="hand" class="hand"></div>
+        </section>
+      </div>
+
+      <div id="announcement" class="announcement" aria-live="polite"></div>
+      <footer class="footer-note">
+        Tip: Tap or click a comparison row to preview the matchup.<br />
+        <span class="version-tag">Version 0.63.0</span>
+      </footer>
+      </main>
+    </div>
+
+    <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+      <div class="modal">
+        <div class="result-header">
+          <h2 id="result-title">Result Details</h2>
+          <p id="result-advice" class="result-advice"></p>
+          <div id="result-verdict" class="result-verdict mid">&nbsp;</div>
+          <div id="result-defender" class="badge-stack"></div>
+        </div>
+        <div>
+          <h3>Type effectiveness</h3>
+          <ul id="explanations" class="explanations"></ul>
+        </div>
+        <div>
+          <h3>Card Comparison</h3>
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th scope="col">Pokémon</th>
+                <th scope="col">Multiplier</th>
+                <th scope="col">Notes</th>
+                <th scope="col">Why</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-body"></tbody>
+          </table>
+        </div>
+        <div class="modal-actions">
+          <button id="close-modal" class="modal-btn secondary" type="button" disabled>Close</button>
+          <button id="next-round" class="modal-btn primary" type="button" disabled>Next round</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="type-picker-backdrop"
+      class="type-picker-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="type-picker-title"
+      hidden
+    >
+      <div class="type-picker">
+        <h2 id="type-picker-title">Choose attack type</h2>
+        <p id="type-picker-prompt" class="type-picker-prompt"></p>
+        <div id="type-picker-options" class="type-picker-options"></div>
+        <div class="type-picker-actions">
+          <button id="type-picker-cancel" type="button" class="modal-btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
