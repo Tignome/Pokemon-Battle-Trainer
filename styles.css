@@ -372,7 +372,7 @@ main.tabletop::after {
 }
 
 .card-type-text {
-  font-size: 0.85rem;
+  font-size: clamp(0.98rem, 2.2vw, 1.22rem);
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text-soft);
