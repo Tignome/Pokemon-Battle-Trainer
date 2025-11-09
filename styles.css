@@ -59,6 +59,12 @@ body {
   overflow: auto;
 }
 
+@media (max-width: 600px) and (orientation: portrait) {
+  :root {
+    --width-factor: 0.75;
+  }
+}
+
 main.tabletop {
   width: min(100%, 1344px);
   min-height: 100%;
