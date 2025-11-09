@@ -399,6 +399,7 @@ const elements = {
   nextBtn: null,
   modalBackdrop: null,
   resultSummary: null,
+  resultAdvice: null,
   resultVerdict: null,
   resultDefender: null,
   explanations: null,
@@ -425,6 +426,7 @@ function cacheElements() {
   elements.nextBtn = document.getElementById("next-btn");
   elements.modalBackdrop = document.getElementById("modal-backdrop");
   elements.resultSummary = document.getElementById("result-summary");
+  elements.resultAdvice = document.getElementById("result-advice");
   elements.resultVerdict = document.getElementById("result-verdict");
   elements.resultDefender = document.getElementById("result-defender");
   elements.explanations = document.getElementById("explanations");
@@ -513,6 +515,9 @@ function startNextRound() {
   }
   if (elements.nextRound) {
     elements.nextRound.disabled = true;
+  }
+  if (elements.resultAdvice) {
+    elements.resultAdvice.textContent = "";
   }
   state.locked = false;
   state.chosenIndex = null;
@@ -883,6 +888,7 @@ function showResult() {
   }
   renderDefenderBadges();
   renderComparison();
+  updateResultAdvice();
   previewMatch(state.chosenIndex, false);
   if (elements.closeModal) {
     elements.closeModal.focus();
@@ -892,6 +898,123 @@ function showResult() {
 function renderDefenderBadges() {
   if (!elements.resultDefender) return;
   renderTypeBadges(elements.resultDefender, state.defender.types);
+}
+
+function updateResultAdvice() {
+  if (!elements.resultAdvice) return;
+  const { chosenIndex, bestIndex, matchups, chosenResult } = state;
+  const chosenMatch = Number.isInteger(chosenIndex) ? matchups[chosenIndex] : null;
+  const bestMatch = Number.isInteger(bestIndex) ? matchups[bestIndex] : null;
+
+  if (!chosenMatch) {
+    elements.resultAdvice.textContent = "";
+    return;
+  }
+
+  const chosen = chosenResult || chosenMatch.bestTypes[0] || chosenMatch.results[0] || null;
+  const best = bestMatch ? bestMatch.bestTypes[0] || bestMatch.results[0] || null : null;
+  const chosenMultiplier = chosen ? chosen.multiplier : 0;
+  const bestMultiplier = best ? best.multiplier : chosenMultiplier;
+  let message = "";
+
+  if (bestMatch && chosenIndex === bestIndex && nearlyEqual(chosenMultiplier, bestMultiplier)) {
+    const reason = describeResultReason(best);
+    if (reason) {
+      message = `You made the best call. ${chosenMatch.pokemon.name} reached ×${bestMultiplier} because ${reason}.`;
+    } else {
+      message = `You made the best call. ${chosenMatch.pokemon.name} delivered the top multiplier of ×${bestMultiplier}.`;
+    }
+  } else if (bestMatch && best) {
+    const bestReason = describeResultReason(best);
+    const chosenReason = describeResultReason(chosen);
+    const firstSentence = `A stronger play was ${bestMatch.pokemon.name} for ×${bestMultiplier}${
+      bestReason ? ` because ${bestReason}` : ""
+    }.`;
+    let secondSentence = `Your pick ${chosenMatch.pokemon.name} only managed ×${chosenMultiplier}`;
+    if (chosenReason) {
+      secondSentence += ` because ${chosenReason}`;
+    }
+    secondSentence += ".";
+    message = `${firstSentence} ${secondSentence}`;
+  } else {
+    message = "Review the matchup breakdown below to plan your next move.";
+  }
+
+  elements.resultAdvice.textContent = message;
+}
+
+function describeResultReason(result) {
+  if (!result || !Array.isArray(result.perType)) return "";
+
+  const supers = [];
+  const resisted = [];
+  const immune = [];
+  const neutral = [];
+
+  result.perType.forEach((entry) => {
+    if (!entry) return;
+    const label = formatType(entry.defender);
+    if (nearlyEqual(entry.multiplier, 2)) {
+      supers.push(label);
+    } else if (nearlyEqual(entry.multiplier, 1)) {
+      neutral.push(label);
+    } else if (nearlyEqual(entry.multiplier, 0)) {
+      immune.push(label);
+    } else if (nearlyEqual(entry.multiplier, 0.5) || nearlyEqual(entry.multiplier, 0.25)) {
+      resisted.push(label);
+    }
+  });
+
+  const multiplier = result.multiplier;
+
+  if (nearlyEqual(multiplier, 0)) {
+    if (immune.length) {
+      return `the defender's ${formatList(immune)} typing is immune to it`;
+    }
+    return "it couldn't damage the defender";
+  }
+
+  if (multiplier >= 4 - 0.0001) {
+    if (supers.length >= 2) {
+      return `it strikes both ${formatList(supers)} super effectively`;
+    }
+    if (supers.length) {
+      return `it lands doubly super-effective damage on ${formatList(supers)}`;
+    }
+    return "it overwhelms the defender";
+  }
+
+  if (nearlyEqual(multiplier, 2)) {
+    if (supers.length) {
+      return `it hits ${formatList(supers)} super effectively`;
+    }
+    return "it finds a weakness to exploit";
+  }
+
+  if (nearlyEqual(multiplier, 1)) {
+    if (supers.length && resisted.length) {
+      return `its hit on ${formatList(supers)} offsets the resistance from ${formatList(resisted)}`;
+    }
+    if (supers.length) {
+      return `it strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
+    }
+    if (neutral.length === result.perType.length) {
+      return "it deals reliable neutral damage";
+    }
+    if (resisted.length) {
+      return "it avoids the harsher resistances other cards faced";
+    }
+    return "it deals neutral damage";
+  }
+
+  if (nearlyEqual(multiplier, 0.5) || nearlyEqual(multiplier, 0.25)) {
+    if (resisted.length) {
+      return `it is partially resisted by ${formatList(resisted)}`;
+    }
+    return "it struggles to get through the defenses";
+  }
+
+  return "";
 }
 
 function previewMatch(index, announce = true) {
@@ -1250,6 +1373,15 @@ function normalizeMultiplier(value) {
     }
   }
   return best;
+}
+
+function formatList(items) {
+  if (!items || items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  const allButLast = items.slice(0, -1).join(", ");
+  const last = items[items.length - 1];
+  return `${allButLast}, and ${last}`;
 }
 
 function formatType(type) {

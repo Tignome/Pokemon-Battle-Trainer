@@ -573,14 +573,21 @@ main.tabletop::after {
 
 .modal h2 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 2rem;
 }
 
 .modal h3 {
   margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.result-advice {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #54325f;
 }
 
 .result-header {
@@ -590,7 +597,7 @@ main.tabletop::after {
 }
 
 .result-summary {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   color: var(--text-dark);
 }
 
