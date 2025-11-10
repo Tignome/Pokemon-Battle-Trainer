@@ -1,7 +1,7 @@
 function playCorrect() {}
 function playWrong() {}
 
-const APP_VERSION = "0.64.0";
+const APP_VERSION = "0.71.0";
 
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
@@ -741,12 +741,12 @@ function renderHand(hand) {
   if (!elements.hand) return;
   elements.hand.innerHTML = "";
   state.handButtons = [];
-  elements.hand.style.setProperty("--fan-adjust", "0px");
+  elements.hand.style.setProperty("--hand-shift", "0px");
   hand.forEach((pokemon, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "hand-card dealing";
-    button.style.setProperty("--fan-index", index);
+    button.style.setProperty("--deal-index", index);
     button.dataset.index = String(index);
     button.setAttribute("aria-label", `Play ${pokemon.name}`);
     const card = buildCard(pokemon, { variant: "hand" });
@@ -775,7 +775,7 @@ function alignHandFan() {
   if (!elements.hand) return;
   const cards = Array.from(elements.hand.querySelectorAll(".hand-card"));
   if (cards.length === 0) {
-    elements.hand.style.setProperty("--fan-adjust", "0px");
+    elements.hand.style.setProperty("--hand-shift", "0px");
     return;
   }
   const defenderNode = elements.defenderCard?.firstElementChild || elements.defenderCard;
@@ -787,7 +787,7 @@ function alignHandFan() {
   const fanRight = Math.max(...cardRects.map((rect) => rect.right));
   const fanCenter = (fanLeft + fanRight) / 2;
   const delta = anchorCenter - fanCenter;
-  elements.hand.style.setProperty("--fan-adjust", `${delta}px`);
+  elements.hand.style.setProperty("--hand-shift", `${delta}px`);
 }
 
 function resolveSelection(index) {
@@ -1256,13 +1256,10 @@ function buildCard(pokemon, { variant }) {
 
   const header = document.createElement("div");
   header.className = "card-header";
-  const dexSpan = document.createElement("span");
-  dexSpan.textContent = `No. ${String(pokemon.dex).padStart(3, "0")}`;
-  header.appendChild(dexSpan);
   const typesStack = document.createElement("div");
-  typesStack.className = "card-types";
+  typesStack.className = "card-types card-types-header";
   pokemon.types.forEach((type) => {
-    typesStack.appendChild(createTypeBadge(type));
+    typesStack.appendChild(createTypeBadge(type, { variant: "inline" }));
   });
   header.appendChild(typesStack);
 
