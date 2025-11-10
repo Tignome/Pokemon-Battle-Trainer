@@ -741,12 +741,12 @@ function renderHand(hand) {
   if (!elements.hand) return;
   elements.hand.innerHTML = "";
   state.handButtons = [];
-  elements.hand.style.setProperty("--fan-adjust", "0px");
+  elements.hand.style.setProperty("--hand-shift", "0px");
   hand.forEach((pokemon, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "hand-card dealing";
-    button.style.setProperty("--fan-index", index);
+    button.style.setProperty("--deal-index", index);
     button.dataset.index = String(index);
     button.setAttribute("aria-label", `Play ${pokemon.name}`);
     const card = buildCard(pokemon, { variant: "hand" });
@@ -775,7 +775,7 @@ function alignHandFan() {
   if (!elements.hand) return;
   const cards = Array.from(elements.hand.querySelectorAll(".hand-card"));
   if (cards.length === 0) {
-    elements.hand.style.setProperty("--fan-adjust", "0px");
+    elements.hand.style.setProperty("--hand-shift", "0px");
     return;
   }
   const defenderNode = elements.defenderCard?.firstElementChild || elements.defenderCard;
@@ -787,7 +787,7 @@ function alignHandFan() {
   const fanRight = Math.max(...cardRects.map((rect) => rect.right));
   const fanCenter = (fanLeft + fanRight) / 2;
   const delta = anchorCenter - fanCenter;
-  elements.hand.style.setProperty("--fan-adjust", `${delta}px`);
+  elements.hand.style.setProperty("--hand-shift", `${delta}px`);
 }
 
 function resolveSelection(index) {

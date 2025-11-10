@@ -59,12 +59,6 @@ body {
   overflow: auto;
 }
 
-@media (max-width: 600px) and (orientation: portrait) {
-  :root {
-    --width-factor: 0.75;
-  }
-}
-
 main.tabletop {
   width: min(100%, 1344px);
   min-height: 100%;
@@ -493,15 +487,18 @@ main.tabletop::after {
 
 .hand {
   position: relative;
-  min-height: clamp(320px, 45vh, 480px);
-  perspective: calc(1400px * var(--scale-factor));
+  min-height: clamp(280px, 38vh, 420px);
   padding: 1.5rem 0;
   margin: 0 auto;
   width: 100%;
   max-width: min(100%, 1100px);
-  --fan-adjust: 0px;
-  --fan-step: clamp(28px, 5vh, 42px);
-  --fan-spread: clamp(160px, 32vw, 320px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(0.2rem, 1.2vw, 0.6rem);
+  transform: translateX(var(--hand-shift, 0px));
+  transition: transform 0.25s ease;
 }
 
 .hand-card {
@@ -510,16 +507,16 @@ main.tabletop::after {
   border: none;
   padding: 0;
   cursor: pointer;
-  position: absolute;
-  top: calc(var(--fan-index) * var(--fan-step));
-  left: calc(50% + var(--fan-adjust));
-  --fan-tilt: calc((var(--fan-index) - 1) * 4.5deg);
-  --fan-shift: calc((var(--fan-index) - 1) * var(--fan-spread));
-  --final-transform: translateX(-50%) translateX(var(--fan-shift)) rotate(var(--fan-tilt));
-  transform: var(--final-transform);
-  transform-origin: center 140%;
-  transition: transform 0.22s ease, filter 0.22s ease;
-  z-index: calc(10 + var(--fan-index));
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  transition: filter 0.22s ease;
+}
+
+.hand-card:not(.disabled):hover,
+.hand-card:not(.disabled):focus-visible {
+  z-index: 5;
 }
 
 .hand-card:focus-visible {
@@ -549,18 +546,17 @@ main.tabletop::after {
 @keyframes deal-card {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateX(var(--fan-shift))
-      translateY(calc(-140 * var(--size-unit)))
-      rotate(calc(var(--fan-tilt) - 8deg));
+    transform: translateY(calc(40 * var(--size-unit))) scale(0.94);
   }
   to {
     opacity: 1;
-    transform: var(--final-transform);
+    transform: translateY(0) scale(1);
   }
 }
 
 .hand-card.dealing {
-  animation: deal-card 0.5s ease forwards;
+  animation: deal-card 0.45s ease forwards;
+  animation-delay: calc(var(--deal-index, 0) * 80ms);
 }
 
 .announcement {
