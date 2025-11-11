@@ -1,7 +1,7 @@
 function playCorrect() {}
 function playWrong() {}
 
-const APP_VERSION = "0.71.0";
+const APP_VERSION = "0.74.0";
 
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
@@ -1060,7 +1060,7 @@ function describeResultReason(result) {
       return `${typeName} strikes ${formatList(supers)} super effectively while staying neutral elsewhere`;
     }
     if (neutral.length === result.perType.length) {
-      return `${typeName} deals reliable neutral damage`;
+      return `${typeName} deals only neutral damage`;
     }
     if (resisted.length) {
       return `${typeName} avoids the harsher resistances other cards faced`;
