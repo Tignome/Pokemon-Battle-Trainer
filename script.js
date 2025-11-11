@@ -451,8 +451,6 @@ const state = {
 };
 
 const elements = {
-  defenderName: null,
-  defenderTypes: null,
   defenderCard: null,
   hand: null,
   announcement: null,
@@ -478,8 +476,6 @@ const elements = {
 let pendingResize = null;
 
 function cacheElements() {
-  elements.defenderName = document.getElementById("defender-name");
-  elements.defenderTypes = document.getElementById("defender-types");
   elements.defenderCard = document.getElementById("defender-card");
   elements.hand = document.getElementById("hand");
   elements.announcement = document.getElementById("announcement");
@@ -726,12 +722,6 @@ function evaluateBest(matchups) {
 
 function renderDefender(defender) {
   if (!elements.defenderCard) return;
-  if (elements.defenderName) {
-    elements.defenderName.textContent = defender.name;
-  }
-  if (elements.defenderTypes) {
-    renderTypeBadges(elements.defenderTypes, defender.types);
-  }
   elements.defenderCard.innerHTML = "";
   elements.defenderCard.appendChild(buildCard(defender, { variant: "defender" }));
   requestAnimationFrame(() => alignHandFan());
