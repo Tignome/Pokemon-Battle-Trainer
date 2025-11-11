@@ -83,6 +83,10 @@ main.tabletop {
   .scale-wrapper {
     min-height: 100dvh;
   }
+
+  .modal {
+    max-height: calc(100dvh - 3rem);
+  }
 }
 
 @media (min-width: 1200px) {
@@ -569,8 +573,10 @@ main.tabletop::after {
   position: fixed;
   inset: 0;
   background: rgba(5, 18, 38, 0.78);
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
   padding: 1.5rem;
   z-index: 1000;
 }
@@ -588,6 +594,15 @@ main.tabletop::after {
   color: #2f1a40;
   font-size: 1.05rem;
   line-height: 1.5;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-height: 720px) {
+  .modal-backdrop {
+    align-items: center;
+  }
 }
 
 .type-picker-backdrop {
