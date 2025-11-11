@@ -1284,13 +1284,6 @@ function buildCard(pokemon, { variant }) {
   nameHeading.className = "card-name";
   nameHeading.textContent = pokemon.name;
   body.appendChild(nameHeading);
-  const typeLine = document.createElement("div");
-  typeLine.className = "card-types card-types-footer";
-  pokemon.types.forEach((type) => {
-    typeLine.appendChild(createTypeBadge(type, { variant: "inline" }));
-  });
-  body.appendChild(typeLine);
-
   inner.appendChild(header);
   inner.appendChild(art);
   inner.appendChild(body);
