@@ -239,29 +239,7 @@ main.tabletop::after {
   color: var(--text-light);
 }
 
-.defender-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.defender-name {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--text-light);
-  text-shadow: 0 calc(6 * var(--size-unit)) calc(18 * var(--size-unit)) rgba(0, 0, 0, 0.35);
-}
-
-.defender-types {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.badge-stack,
-.defender-types {
+.badge-stack {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
@@ -841,7 +819,7 @@ main.tabletop::after {
 .why-line {
   display: flex;
   gap: 0.35rem;
-  align-items: baseline;
+  align-items: center;
 }
 
 .why-line.used {
