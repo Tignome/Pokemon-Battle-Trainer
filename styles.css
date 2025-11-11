@@ -819,7 +819,7 @@ main.tabletop::after {
 .why-line {
   display: flex;
   gap: 0.35rem;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .why-line.used {
