@@ -83,6 +83,10 @@ main.tabletop {
   .scale-wrapper {
     min-height: 100dvh;
   }
+
+  .modal {
+    max-height: calc(100dvh - 3rem);
+  }
 }
 
 @media (min-width: 1200px) {
@@ -211,6 +215,37 @@ main.tabletop::after {
   transform: translateY(calc(-2 * var(--size-unit)));
   filter: brightness(1.05);
   outline: none;
+}
+
+.hints-btn {
+  appearance: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(6, 22, 42, 0.45);
+  color: var(--text-light);
+  border: calc(2 * var(--size-unit)) solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 calc(14 * var(--size-unit)) calc(26 * var(--size-unit)) rgba(5, 18, 38, 0.4);
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+
+.hints-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.hints-btn:not(:disabled):hover,
+.hints-btn:not(:disabled):focus-visible {
+  transform: translateY(calc(-2 * var(--size-unit)));
+  filter: brightness(1.08);
+  outline: none;
+  box-shadow: 0 calc(18 * var(--size-unit)) calc(36 * var(--size-unit)) rgba(5, 18, 38, 0.55);
 }
 
 .table-layout {
@@ -569,8 +604,10 @@ main.tabletop::after {
   position: fixed;
   inset: 0;
   background: rgba(5, 18, 38, 0.78);
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
   padding: 1.5rem;
   z-index: 1000;
 }
@@ -588,6 +625,148 @@ main.tabletop::after {
   color: #2f1a40;
   font-size: 1.05rem;
   line-height: 1.5;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-height: 720px) {
+  .modal-backdrop {
+    align-items: center;
+  }
+}
+
+.hints-backdrop {
+  padding-block: clamp(1rem, 6vh, 2.5rem);
+}
+
+@media (min-height: 720px) {
+  .hints-backdrop {
+    align-items: center;
+  }
+}
+
+.hints-modal {
+  width: min(calc(620px * var(--scale-factor)), 100%);
+  gap: 1.25rem;
+}
+
+.hints-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hints-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hints-icon {
+  display: inline-flex;
+  width: clamp(2rem, 4vw, 2.5rem);
+  height: clamp(2rem, 4vw, 2.5rem);
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 calc(3 * var(--size-unit)) calc(6 * var(--size-unit)) rgba(255, 255, 255, 0.6);
+}
+
+.hints-header h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, calc(3.4vw * var(--scale-factor)), 1.85rem);
+}
+
+.hints-defender {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.hints-sprite {
+  width: clamp(3rem, 10vw, 3.75rem);
+  height: clamp(3rem, 10vw, 3.75rem);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--text-dark);
+  box-shadow: 0 calc(12 * var(--size-unit)) calc(24 * var(--size-unit)) rgba(5, 18, 38, 0.35);
+  overflow: hidden;
+}
+
+.hints-sprite.with-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hints-defender-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.hints-defender-name {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.hints-summary {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.98rem;
+}
+
+.hints-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.hint-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hint-section-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.hint-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hint-type-chips .type-badge {
+  font-size: 0.85rem;
+  min-width: clamp(calc(40px * var(--scale-factor)), calc(3.6vw * var(--scale-factor)), calc(54px * var(--scale-factor)));
+  min-height: clamp(calc(36px * var(--scale-factor)), calc(3.6vw * var(--scale-factor)), calc(48px * var(--scale-factor)));
+}
+
+.hint-type-chips .type-badge.covers-both {
+  outline: calc(2 * var(--size-unit)) solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 calc(10 * var(--size-unit)) calc(20 * var(--size-unit)) rgba(255, 180, 0, 0.45);
+  font-weight: 700;
+}
+
+.hint-type-empty {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-soft);
 }
 
 .type-picker-backdrop {
@@ -905,6 +1084,20 @@ main.tabletop::after {
   .scorebar {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .hints-btn {
+    width: 100%;
+  }
+
+  .hints-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hints-defender {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .pokemon-card {
