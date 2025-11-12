@@ -34,6 +34,7 @@
             <div class="score-pill"><span>Score</span><span id="score">0/0</span></div>
             <div class="score-pill"><span>Streak</span><span id="streak">0</span></div>
           </div>
+          <button id="hints-btn" type="button" class="hints-btn" disabled>Hints</button>
           <button id="next-btn" class="next-btn" type="button" hidden>Deal next round</button>
         </div>
       </header>
@@ -87,6 +88,36 @@
         <div class="modal-actions">
           <button id="close-modal" class="modal-btn secondary" type="button" disabled>Close</button>
           <button id="next-round" class="modal-btn primary" type="button" disabled>Next round</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="hints-backdrop"
+      class="modal-backdrop hints-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="hints-title"
+      hidden
+    >
+      <div class="modal hints-modal" role="document">
+        <div class="hints-header">
+          <div class="hints-title-group">
+            <span class="hints-icon" aria-hidden="true">💡</span>
+            <h2 id="hints-title" tabindex="-1">Type Hints</h2>
+          </div>
+          <div id="hints-defender" class="hints-defender">
+            <div id="hints-sprite" class="hints-sprite" aria-hidden="true"></div>
+            <div class="hints-defender-meta">
+              <p id="hints-defender-name" class="hints-defender-name"></p>
+              <div id="hints-types" class="badge-stack"></div>
+            </div>
+          </div>
+        </div>
+        <p id="hints-summary" class="hints-summary" aria-live="polite"></p>
+        <div id="hints-sections" class="hints-sections"></div>
+        <div class="modal-actions">
+          <button id="close-hints" class="modal-btn primary" type="button">Close</button>
         </div>
       </div>
     </div>

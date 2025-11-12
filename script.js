@@ -1,7 +1,7 @@
 function playCorrect() {}
 function playWrong() {}
 
-const APP_VERSION = "0.76.0";
+const APP_VERSION = "0.77.0";
 
 const TYPE_CHART = {
   normal: { super: [], not: ["rock", "steel"], immune: ["ghost"] },
@@ -46,6 +46,15 @@ const TYPE_COLORS = {
 };
 
 const TYPE_LIST = Object.keys(TYPE_CHART);
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  "button:not([disabled])",
+  "input:not([disabled]):not([type='hidden'])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(", ");
 
 const TYPE_ICON_OVERRIDES =
   typeof window !== "undefined" && window.TYPE_ICON_OVERRIDES
@@ -448,6 +457,11 @@ const state = {
   handButtons: [],
   comparisonRows: [],
   spriteMap: new Map(),
+  hintsOpen: false,
+  hintsReturnFocus: null,
+  hintsFocusables: [],
+  hintsSprite: null,
+  hintsBadgeStack: null,
 };
 
 const elements = {
@@ -471,6 +485,16 @@ const elements = {
   typePickerOptions: null,
   typePickerCancel: null,
   versionTag: null,
+  hintsBtn: null,
+  hintsBackdrop: null,
+  hintsSummary: null,
+  hintsSections: null,
+  closeHints: null,
+  hintsDefender: null,
+  hintsTypes: null,
+  hintsDefenderName: null,
+  hintsSprite: null,
+  hintsTitle: null,
 };
 
 let pendingResize = null;
@@ -496,8 +520,25 @@ function cacheElements() {
   elements.typePickerOptions = document.getElementById("type-picker-options");
   elements.typePickerCancel = document.getElementById("type-picker-cancel");
   elements.versionTag = document.querySelector(".version-tag");
+  elements.hintsBtn = document.getElementById("hints-btn");
+  elements.hintsBackdrop = document.getElementById("hints-backdrop");
+  elements.hintsSummary = document.getElementById("hints-summary");
+  elements.hintsSections = document.getElementById("hints-sections");
+  elements.closeHints = document.getElementById("close-hints");
+  elements.hintsDefender = document.getElementById("hints-defender");
+  elements.hintsTypes = document.getElementById("hints-types");
+  elements.hintsDefenderName = document.getElementById("hints-defender-name");
+  elements.hintsSprite = document.getElementById("hints-sprite");
+  elements.hintsTitle = document.getElementById("hints-title");
   if (elements.versionTag) {
     elements.versionTag.textContent = `Version ${APP_VERSION}`;
+  }
+  state.hintsBadgeStack = elements.hintsTypes;
+  state.hintsSprite = elements.hintsSprite;
+  if (elements.hintsBtn) {
+    elements.hintsBtn.disabled = true;
+    elements.hintsBtn.setAttribute("aria-expanded", "false");
+    elements.hintsBtn.setAttribute("aria-disabled", "true");
   }
 }
 
@@ -519,6 +560,22 @@ function bindEvents() {
     elements.typePickerCancel.addEventListener("click", () => closeTypePicker(true));
   }
 
+  if (elements.hintsBtn) {
+    elements.hintsBtn.addEventListener("click", () => openHintsModal());
+  }
+
+  if (elements.closeHints) {
+    elements.closeHints.addEventListener("click", () => closeHintsModal({ focusTrigger: true }));
+  }
+
+  if (elements.hintsBackdrop) {
+    elements.hintsBackdrop.addEventListener("click", (event) => {
+      if (event.target === elements.hintsBackdrop) {
+        closeHintsModal({ focusTrigger: true });
+      }
+    });
+  }
+
   if (elements.typePickerBackdrop) {
     elements.typePickerBackdrop.addEventListener("click", (event) => {
       if (event.target === elements.typePickerBackdrop) {
@@ -527,8 +584,14 @@ function bindEvents() {
     });
   }
 
+  document.addEventListener("focusin", enforceHintsFocus, true);
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (state.hintsOpen && elements.hintsBackdrop && !elements.hintsBackdrop.hidden) {
+        closeHintsModal({ focusTrigger: true });
+        return;
+      }
       if (elements.typePickerBackdrop && !elements.typePickerBackdrop.hidden) {
         closeTypePicker(true);
         return;
@@ -536,6 +599,9 @@ function bindEvents() {
       if (elements.modalBackdrop && !elements.modalBackdrop.hidden) {
         closeModal(true);
       }
+    }
+    if (event.key === "Tab") {
+      maintainHintsFocus(event);
     }
   });
 
@@ -564,6 +630,8 @@ if (document.readyState === "loading") {
 }
 
 function startNextRound() {
+  closeHintsModal(false);
+  setHintsButtonAvailability(false);
   if (elements.nextBtn) {
     elements.nextBtn.hidden = true;
     elements.nextBtn.disabled = true;
@@ -627,6 +695,7 @@ function dealRound() {
   state.matchups = matchups;
 
   renderDefender(defender);
+  setHintsButtonAvailability(true);
   renderHand(hand);
   updateAnnouncement("Choose the Pokémon card with the most effective attack!");
 }
@@ -911,6 +980,232 @@ function closeTypePicker(cancelled) {
     if (button) {
       button.focus();
     }
+  }
+}
+
+function openHintsModal() {
+  if (!elements.hintsBackdrop || !elements.hintsBtn) {
+    return;
+  }
+  if (elements.hintsBtn.disabled) {
+    return;
+  }
+  if (!state.defender) {
+    return;
+  }
+  if (state.hintsOpen) {
+    return;
+  }
+
+  renderHintsContent();
+  state.hintsReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  elements.hintsBackdrop.hidden = false;
+  elements.hintsBackdrop.scrollTop = 0;
+  state.hintsOpen = true;
+  elements.hintsBtn.setAttribute("aria-expanded", "true");
+  refreshHintsFocusables();
+  requestAnimationFrame(() => {
+    refreshHintsFocusables();
+    if (elements.closeHints) {
+      elements.closeHints.focus();
+    } else if (state.hintsFocusables[0]) {
+      state.hintsFocusables[0].focus();
+    }
+  });
+}
+
+function closeHintsModal(options = {}) {
+  const focusTrigger = typeof options === "boolean" ? options : Boolean(options?.focusTrigger);
+  if (!elements.hintsBackdrop) {
+    return;
+  }
+  if (!elements.hintsBackdrop.hidden) {
+    elements.hintsBackdrop.hidden = true;
+  }
+  state.hintsOpen = false;
+  state.hintsFocusables = [];
+  if (elements.hintsBtn) {
+    elements.hintsBtn.setAttribute("aria-expanded", "false");
+  }
+  if (focusTrigger && elements.hintsBtn) {
+    elements.hintsBtn.focus();
+  } else if (focusTrigger && state.hintsReturnFocus && typeof state.hintsReturnFocus.focus === "function") {
+    state.hintsReturnFocus.focus();
+  }
+  state.hintsReturnFocus = null;
+}
+
+function renderHintsContent() {
+  const defender = state.defender;
+  if (!defender) return;
+
+  if (elements.hintsDefenderName) {
+    elements.hintsDefenderName.textContent = defender.name;
+  }
+  if (state.hintsBadgeStack) {
+    renderTypeBadges(state.hintsBadgeStack, defender.types);
+  }
+  if (state.hintsSprite) {
+    state.hintsSprite.textContent = "";
+    state.hintsSprite.classList.remove("with-sprite");
+    const spriteCandidates = collectSpriteCandidates(defender);
+    if (spriteCandidates.length) {
+      const img = document.createElement("img");
+      img.alt = `${defender.name} sprite`;
+      img.className = "hints-sprite-img";
+      img.loading = "lazy";
+      img.decoding = "async";
+      loadSpriteFromCandidates(img, state.hintsSprite, spriteCandidates, initialsFor(defender.name));
+    } else {
+      state.hintsSprite.textContent = initialsFor(defender.name);
+    }
+  }
+
+  if (elements.hintsSummary) {
+    elements.hintsSummary.textContent = "";
+  }
+  if (elements.hintsSections) {
+    elements.hintsSections.innerHTML = "";
+  }
+
+  const sectionsData = defender.types.map((defenderType) => {
+    const strongTypes = TYPE_LIST.filter((attackingType) => {
+      const chart = TYPE_CHART[attackingType];
+      return chart ? chart.super.includes(defenderType) : false;
+    });
+    return { defenderType, strongTypes };
+  });
+
+  const union = [];
+  const unionSet = new Set();
+  sectionsData.forEach((section) => {
+    section.strongTypes.forEach((type) => {
+      if (!unionSet.has(type)) {
+        unionSet.add(type);
+        union.push(type);
+      }
+    });
+  });
+
+  const overlap = new Set();
+  if (sectionsData.length > 1) {
+    const [first, ...rest] = sectionsData.map((section) => new Set(section.strongTypes));
+    first.forEach((type) => {
+      if (rest.every((set) => set.has(type))) {
+        overlap.add(type);
+      }
+    });
+  }
+
+  if (elements.hintsSections) {
+    sectionsData.forEach((section) => {
+      const wrapper = document.createElement("section");
+      wrapper.className = "hint-section";
+      const heading = document.createElement("h3");
+      heading.className = "hint-section-title";
+      heading.textContent = `Strong vs ${formatType(section.defenderType)}`;
+      wrapper.appendChild(heading);
+      if (section.strongTypes.length) {
+        const chips = document.createElement("div");
+        chips.className = "hint-type-chips";
+        section.strongTypes.forEach((type) => {
+          const badge = createTypeBadge(type);
+          if (overlap.has(type)) {
+            badge.classList.add("covers-both");
+          }
+          chips.appendChild(badge);
+        });
+        wrapper.appendChild(chips);
+      } else {
+        const empty = document.createElement("p");
+        empty.className = "hint-type-empty";
+        const message = `No attack types strike ${formatType(section.defenderType)} super effectively.`;
+        renderTextWithTypeIcons(empty, message);
+        wrapper.appendChild(empty);
+      }
+      elements.hintsSections.appendChild(wrapper);
+    });
+  }
+
+  if (elements.hintsSummary) {
+    const defenderTypes = defender.types.map((type) => formatType(type));
+    const unionFormatted = union.map((type) => formatType(type));
+    const overlapFormatted = Array.from(overlap).map((type) => formatType(type));
+    let summary = "";
+    if (!union.length) {
+      const typing = formatList(defenderTypes);
+      summary = `${defender.name}'s ${typing} typing has no listed super-effective weaknesses. Lean on neutral damage or debuffs.`;
+    } else if (overlap.size && sectionsData.length > 1) {
+      const typing = formatList(defenderTypes);
+      const overlapList = formatList(overlapFormatted);
+      const remaining = union.filter((type) => !overlap.has(type)).map((type) => formatType(type));
+      summary = `${overlapList} hit both of ${typing}.`;
+      if (remaining.length) {
+        summary += ` Other strong options include ${formatList(remaining)}.`;
+      } else {
+        summary += " They cover every weakness at once.";
+      }
+    } else {
+      const typing = formatList(defenderTypes);
+      summary = `${defender.name}'s ${typing} typing is weak to ${formatList(unionFormatted)}.`;
+    }
+    renderTextWithTypeIcons(elements.hintsSummary, summary);
+  }
+}
+
+function refreshHintsFocusables() {
+  if (!elements.hintsBackdrop || elements.hintsBackdrop.hidden) {
+    state.hintsFocusables = [];
+    return;
+  }
+  const candidates = Array.from(elements.hintsBackdrop.querySelectorAll(FOCUSABLE_SELECTOR));
+  state.hintsFocusables = candidates.filter((node) => {
+    if (!(node instanceof HTMLElement)) return false;
+    if (node.hasAttribute("disabled")) return false;
+    if (node.getAttribute("tabindex") === "-1") return false;
+    if (node.closest("[hidden]")) return false;
+    return node.offsetParent !== null || node === document.activeElement;
+  });
+}
+
+function maintainHintsFocus(event) {
+  if (event.key !== "Tab") {
+    return;
+  }
+  if (!state.hintsOpen || !elements.hintsBackdrop || elements.hintsBackdrop.hidden) {
+    return;
+  }
+  refreshHintsFocusables();
+  const focusables = state.hintsFocusables;
+  if (!focusables.length) {
+    event.preventDefault();
+    return;
+  }
+  const currentIndex = focusables.indexOf(document.activeElement);
+  let nextIndex = currentIndex;
+  if (event.shiftKey) {
+    nextIndex = currentIndex <= 0 ? focusables.length - 1 : currentIndex - 1;
+  } else {
+    nextIndex = currentIndex === focusables.length - 1 ? 0 : currentIndex + 1;
+  }
+  const target = focusables[nextIndex] || focusables[0];
+  if (target) {
+    event.preventDefault();
+    target.focus();
+  }
+}
+
+function enforceHintsFocus(event) {
+  if (!state.hintsOpen || !elements.hintsBackdrop || elements.hintsBackdrop.hidden) {
+    return;
+  }
+  if (elements.hintsBackdrop.contains(event.target)) {
+    return;
+  }
+  refreshHintsFocusables();
+  const fallback = state.hintsFocusables[0] || elements.closeHints || elements.hintsBtn;
+  if (fallback && typeof fallback.focus === "function") {
+    fallback.focus();
   }
 }
 
@@ -1523,6 +1818,22 @@ function updateScorebar() {
 function updateAnnouncement(message) {
   if (elements.announcement) {
     elements.announcement.textContent = message;
+  }
+}
+
+function setHintsButtonAvailability(available) {
+  if (!elements.hintsBtn) {
+    return;
+  }
+  elements.hintsBtn.disabled = !available;
+  if (!available) {
+    elements.hintsBtn.setAttribute("aria-disabled", "true");
+    elements.hintsBtn.setAttribute("aria-expanded", "false");
+  } else {
+    elements.hintsBtn.removeAttribute("aria-disabled");
+    if (!state.hintsOpen) {
+      elements.hintsBtn.setAttribute("aria-expanded", "false");
+    }
   }
 }
 
